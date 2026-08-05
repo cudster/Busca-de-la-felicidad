@@ -1,0 +1,9 @@
+# NUNCA subir secretos al repo (contiene tokens de Meta y la API key de Anthropic)
+.env
+
+# Python
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store

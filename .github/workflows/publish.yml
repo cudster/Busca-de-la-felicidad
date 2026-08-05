@@ -1,0 +1,40 @@
+name: Publicar en Instagram
+
+# Corre en los dos horarios de publicación (13:00 y 22:00 UTC) con un buffer,
+# y también se puede lanzar a mano desde la pestaña Actions.
+on:
+  schedule:
+    - cron: "10 13 * * *"
+    - cron: "10 22 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write  # para commitear de vuelta los posts marcados como publicados
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Publicar posts vencidos
+        env:
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          META_PAGE_TOKEN: ${{ secrets.META_PAGE_TOKEN }}
+        run: python3 publish.py --run
+
+      - name: Guardar el calendario actualizado
+        run: |
+          if [ -n "$(git status --porcelain calendar)" ]; then
+            git config user.name "epicplane-bot"
+            git config user.email "actions@users.noreply.github.com"
+            git add calendar
+            git commit -m "chore: marcar posts publicados [skip ci]"
+            git push
+          else
+            echo "Nada que commitear (no se publicó nada nuevo)."
+          fi
