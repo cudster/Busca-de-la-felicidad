@@ -202,7 +202,8 @@ Voice & format rules (apply to EVERY post):
 - Write in native, casual-expert English. Never sound like a textbook or an AI.
 - hook_en: max 8 words. It must stop the scroll instantly.
 - The first line of the caption must hook the reader; no throat-clearing.
-- caption_en: 80-150 words. End with a genuine question that invites comments.
+- caption_en: keep it SHORT and punchy — 2-3 sentences, ~30-60 words max. \
+Every sentence earns its place. End with a short question that invites comments.
 - caption_es: a natural Latin-American Spanish translation of the caption \
 (neutral "tú", no Argentine voseo). Same meaning and energy, not word-for-word.
 - hashtags: 8-12 tags mixing high-volume, medium, and niche aviation tags. \
@@ -260,7 +261,7 @@ CALENDAR_TOOL = {
                         "id": {"type": "string", "description": "The post id, exactly as given."},
                         "topic": {"type": "string"},
                         "hook_en": {"type": "string", "description": "Max 8 words."},
-                        "caption_en": {"type": "string", "description": "80-150 words, ends with a question."},
+                        "caption_en": {"type": "string", "description": "SHORT: 2-3 sentences, ~30-60 words, ends with a short question."},
                         "caption_es": {"type": "string", "description": "Natural neutral Latin-American Spanish."},
                         "hashtags": {
                             "type": "array",
@@ -342,6 +343,72 @@ def generate_creative(skeleton: list[dict], month_label: str, model: str) -> dic
     )
 
     return {p["id"]: p for p in posts if "id" in p}
+
+
+# ---------------------------------------------------------------------------
+# 3b. Acortar captions de un mes ya generado
+# ---------------------------------------------------------------------------
+
+SHORTEN_SYSTEM = """You are editing Instagram captions for Epic.Plane, an aviation \
+account with a native, casual-expert English voice. Rewrite each caption to be \
+SHORT and punchy: 2-3 sentences, ~30-60 words max. Keep the single most striking \
+fact or hook, cut everything else, and end with a short question that invites \
+comments. Stay accurate and never invent facts. Also provide a natural, equally \
+short Latin-American Spanish version (neutral "tú", no Argentine voseo). Return \
+every id via the submit_shortened tool."""
+
+SHORTEN_TOOL = {
+    "name": "submit_shortened",
+    "description": "Return the shortened captions for every post.",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "posts": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "string"},
+                        "caption_en": {"type": "string", "description": "2-3 sentences, ~30-60 words, ends with a short question."},
+                        "caption_es": {"type": "string", "description": "Short natural neutral Latin-American Spanish."},
+                    },
+                    "required": ["id", "caption_en", "caption_es"],
+                },
+            }
+        },
+        "required": ["posts"],
+    },
+}
+
+
+def shorten_captions(posts: list[dict], model: str) -> dict[str, dict]:
+    try:
+        from anthropic import Anthropic
+    except ImportError:
+        sys.exit("Falta 'anthropic'. Instala con: pip install -r requirements.txt")
+    _load_dotenv()
+    client = Anthropic()
+
+    lines = ["Shorten every caption below. Keep the same id.\n"]
+    for p in posts:
+        lines.append(f"- id={p['id']}\n  CURRENT: {p.get('caption_en','')}")
+    user = "\n".join(lines)
+
+    print(f"→ Acortando {len(posts)} captions con {model}…")
+    try:
+        with client.messages.stream(
+            model=model, max_tokens=16000, system=SHORTEN_SYSTEM,
+            tools=[SHORTEN_TOOL], tool_choice={"type": "tool", "name": "submit_shortened"},
+            messages=[{"role": "user", "content": user}],
+        ) as stream:
+            message = stream.get_final_message()
+    except Exception as e:
+        _explain_api_error(e)
+        raise
+    for block in message.content:
+        if getattr(block, "type", None) == "tool_use" and block.name == "submit_shortened":
+            return {p["id"]: p for p in block.input.get("posts", []) if "id" in p}
+    sys.exit("La API no devolvió captions acortados.")
 
 
 # ---------------------------------------------------------------------------
@@ -566,6 +633,11 @@ def main() -> None:
         action="store_true",
         help="Escribe/actualiza el calendario del mes en la Google Sheet (upsert por id).",
     )
+    parser.add_argument(
+        "--shorten",
+        action="store_true",
+        help="Reescribe los captions del mes más cortos (deja tema/hook/hashtags/fotos intactos) y actualiza JSON + hoja.",
+    )
     args = parser.parse_args()
 
     year, month = _parse_month(args.month)
@@ -575,6 +647,30 @@ def main() -> None:
     # Modo aprobar/desaprobar: edita el .json de forma segura y re-exporta el .md.
     if args.approve or args.unapprove:
         _set_approval(year, month, json_path, args.approve, args.unapprove)
+        return
+
+    # Modo shorten: reescribe los captions del mes más cortos.
+    if args.shorten:
+        if not json_path.exists():
+            sys.exit(f"No existe {json_path}. Genera el mes primero.")
+        data = json.loads(json_path.read_text(encoding="utf-8"))
+        short = shorten_captions(data["posts"], args.model)
+        changed = 0
+        for p in data["posts"]:
+            s = short.get(p["id"])
+            if s:
+                p["caption_en"] = s.get("caption_en", p["caption_en"])
+                p["caption_es"] = s.get("caption_es", p["caption_es"])
+                changed += 1
+        json_path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        write_markdown(year, month, data["posts"])
+        print(f"✓ {changed} captions acortados en el JSON.")
+        try:
+            import sheets
+            sheets.write_calendar_to_sheet(data["posts"])
+            print("✓ Hoja actualizada con los captions cortos.")
+        except Exception as e:
+            print(f"⚠️  No pude actualizar la hoja: {e}")
         return
 
     # Modo to-sheet: sube el calendario existente a la Google Sheet (sin regenerar).

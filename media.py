@@ -114,12 +114,16 @@ def search_photos(query: str, key: str, n: int) -> list[dict]:
 def search_video(query: str, key: str) -> dict | None:
     url = ("https://api.pexels.com/videos/search?query=" + urllib.parse.quote(query) +
            "&per_page=5&orientation=portrait")
+    def score(f: dict) -> tuple:
+        w, h = f.get("width") or 0, f.get("height") or 0
+        vertical = 1 if h > w else 0                       # reels van verticales
+        hd = 1 if f.get("quality") == "hd" else 0
+        good_size = 1 if 720 <= h <= 1920 else 0           # ni muy chico ni gigante
+        return (vertical, good_size, hd, -abs(1350 - h))
     for v in _get(url, key).get("videos", []):
         files = [f for f in v.get("video_files", []) if f.get("file_type") == "video/mp4"]
-        # Preferir el mp4 más grande con ancho <= 1080 (apto para reel vertical).
-        files.sort(key=lambda f: (f.get("width") or 0))
-        pick = next((f for f in reversed(files) if (f.get("width") or 0) <= 1080), files[-1] if files else None)
-        if pick:
+        if files:
+            pick = max(files, key=score)
             return {"mp4": pick["link"], "thumb": v.get("image", ""), "by": v.get("user", {}).get("name", "")}
     return None
 
