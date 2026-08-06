@@ -29,15 +29,14 @@ SCOPES = [
     "https://www.googleapis.com/auth/drive",
 ]
 
-# Orden EXACTO de columnas en la hoja (sección 2 del setup).
+# Orden EXACTO de columnas en la hoja (sección 2 del setup + preview de media).
 HEADERS = [
     "id", "date", "time_utc", "type", "topic", "hook_en", "caption_en",
     "caption_es", "hashtags", "cta", "visual_prompt", "asset_path",
-    "approved", "feedback", "published", "published_at",
+    "approved", "feedback", "published", "published_at", "preview",
 ]
-# Columnas que escribe el generador (el resto son de Felipe/publicador).
-GEN_COLS = HEADERS[:12]          # id … asset_path (asset_path lo comparten)
-GEN_ONLY = HEADERS[:11]          # id … visual_prompt (nunca se pisan tras esto: asset_path/approved/feedback/published/published_at)
+# Columnas humanas/de media que NUNCA pisa el generador en un update.
+HUMAN_COLS = ("asset_path", "approved", "feedback", "published", "published_at", "preview")
 
 APPROVED_COL_IDX = HEADERS.index("approved")   # 12 (0-based) -> columna M
 PUBLISHED_COL_IDX = HEADERS.index("published")  # 14 (0-based) -> columna O
@@ -113,9 +112,8 @@ def _post_to_row(post: dict, existing: dict | None) -> list[str]:
         "caption_es": post.get("caption_es", ""), "hashtags": hashtags,
         "cta": post.get("cta", ""), "visual_prompt": post.get("visual_prompt", ""),
     }
-    if existing:  # preservar lo que ya editó Felipe / escribió el publicador
-        human = {c: existing.get(c, "") for c in
-                 ("asset_path", "approved", "feedback", "published", "published_at")}
+    if existing:  # preservar lo que ya editó Felipe / escribió el publicador/media
+        human = {c: existing.get(c, "") for c in HUMAN_COLS}
     else:  # fila nueva: sembrar del post (migra approvals previos del JSON)
         human = {
             "asset_path": post.get("media_url") or post.get("asset_path", ""),
@@ -123,28 +121,60 @@ def _post_to_row(post: dict, existing: dict | None) -> list[str]:
             "feedback": "",
             "published": _bool_str(post.get("published")),
             "published_at": post.get("published_at", ""),
+            "preview": "",
         }
     row = {**gen, **human}
     return [str(row.get(h, "")) for h in HEADERS]
 
 
 def write_calendar_to_sheet(posts: list[dict]) -> int:
-    """Upsert del calendario a la hoja por id, sin pisar approved/feedback/asset_path.
+    """Upsert del calendario a la hoja por id, sin pisar approved/feedback/asset_path/preview.
     Devuelve el número de filas escritas."""
     sh, ws = get_worksheet()
-    existing_rows = ws.get_all_records() if ws.row_count and ws.get_all_values() else []
-    by_id = {str(r.get("id")): r for r in existing_rows}
+    # Leer con FORMULA para preservar el =IMAGE() de la columna preview.
+    existing = ws.get_values(value_render_option="FORMULA")
+    by_id: dict[str, dict] = {}
+    if existing and existing[0]:
+        hdr = existing[0]
+        for r in existing[1:]:
+            rowd = {hdr[i]: (r[i] if i < len(r) else "") for i in range(len(hdr))}
+            by_id[str(rowd.get("id", ""))] = rowd
 
     values = [HEADERS] + [_post_to_row(p, by_id.get(p["id"])) for p in posts]
 
     ws.clear()
-    ws.update(values=values, range_name="A1")
+    # USER_ENTERED para que =IMAGE() y las casillas TRUE/FALSE se interpreten.
+    ws.update(values=values, range_name="A1", value_input_option="USER_ENTERED")
 
     try:
         _apply_formatting(sh, ws, len(posts))
     except Exception as e:  # el formato es cosmético; no debe romper el upsert
         print(f"   (aviso: no pude aplicar formato/casillas: {e})")
     return len(posts)
+
+
+def batch_set_media(items: list[dict]) -> tuple[int, list[str]]:
+    """Escribe asset_path + thumbnail (=IMAGE) para varios posts en una sola llamada.
+    items: [{'id', 'asset_path', 'preview_url'}]. Devuelve (n_ok, ids_no_encontrados)."""
+    from gspread.utils import rowcol_to_a1
+    _, ws = get_worksheet()
+    ids = ws.col_values(1)  # columna A (incluye encabezado en fila 1)
+    id2row = {v: i + 1 for i, v in enumerate(ids)}
+    acol = HEADERS.index("asset_path") + 1
+    pcol = HEADERS.index("preview") + 1
+    data, missing = [], []
+    for it in items:
+        row = id2row.get(it["id"])
+        if not row:
+            missing.append(it["id"])
+            continue
+        data.append({"range": rowcol_to_a1(row, acol), "values": [[it["asset_path"]]]})
+        if it.get("preview_url"):
+            formula = f'=IMAGE("{it["preview_url"]}")'
+            data.append({"range": rowcol_to_a1(row, pcol), "values": [[formula]]})
+    if data:
+        ws.batch_update(data, value_input_option="USER_ENTERED")
+    return len(items) - len(missing), missing
 
 
 def _apply_formatting(sh, ws, n_rows: int) -> None:
@@ -184,6 +214,15 @@ def _apply_formatting(sh, ws, n_rows: int) -> None:
                 "condition": {"type": "CUSTOM_FORMULA",
                               "values": [{"userEnteredValue": '=AND($N2<>"",$M2<>TRUE)'}]},
                 "format": {"backgroundColor": yellow}}}}},
+        # Ancho de la columna preview (Q) para que se vea la miniatura
+        {"updateDimensionProperties": {
+            "range": {"sheetId": gid, "dimension": "COLUMNS",
+                      "startIndex": HEADERS.index("preview"), "endIndex": HEADERS.index("preview") + 1},
+            "properties": {"pixelSize": 170}, "fields": "pixelSize"}},
+        # Alto de las filas de datos para que la miniatura sea visible
+        {"updateDimensionProperties": {
+            "range": {"sheetId": gid, "dimension": "ROWS", "startIndex": 1, "endIndex": last},
+            "properties": {"pixelSize": 120}, "fields": "pixelSize"}},
     ]
     sh.batch_update({"requests": requests})
 
