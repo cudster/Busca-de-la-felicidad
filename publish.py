@@ -33,6 +33,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import re
 import sys
 import time
 import urllib.error
@@ -255,11 +256,64 @@ def cmd_run(env, month: str, dry_run: bool) -> None:
         print("→ Calendario actualizado (published:true en los que salieron).")
 
 
+def build_caption_row(r: dict) -> str:
+    """Caption a partir de una fila de la Google Sheet (hashtags ya es string)."""
+    parts = [str(r.get("caption_en", "")).strip()]
+    tags = str(r.get("hashtags", "")).strip()
+    if tags:
+        parts.append(tags)
+    return "\n\n".join(p for p in parts if p)
+
+
+def cmd_run_sheet(env, dry_run: bool) -> None:
+    """Publica desde la Google Sheet las filas approved=TRUE, published=FALSE y ya vencidas."""
+    import sheets
+    ig_id, token = env["IG_USER_ID"], env["META_PAGE_TOKEN"]
+    rows = sheets.read_approved_posts()
+    now = dt.datetime.now(dt.timezone.utc)
+
+    due = []
+    for r in rows:
+        try:
+            when = dt.datetime.fromisoformat(f"{r['date']}T{r['time_utc']}:00+00:00")
+        except Exception:
+            continue
+        if when <= now:
+            due.append(r)
+
+    if not due:
+        print("No hay filas aprobadas, no publicadas y ya vencidas en la hoja.")
+        return
+
+    print(f"→ {len(due)} post(s) por publicar desde la hoja" + (" (DRY RUN)" if dry_run else "") + ":")
+    for r in due:
+        asset = str(r.get("asset_path", "")).strip()
+        is_url = asset.startswith("http")
+        print(f"   - {r['id']} [{r['type']}] {r['date']} {r['time_utc']}UTC · "
+              f"asset={'URL pública ✓' if is_url else 'sin URL pública'}")
+        if dry_run:
+            continue
+        if not is_url:
+            print("     ⚠️  asset_path no es una URL pública. Saltado (falta enlazar el asset).")
+            continue
+        try:
+            if r["type"] == "carousel":
+                urls = [u for u in re.split(r"[\s,]+", asset) if u]
+                media_id = publish_post(ig_id, token, "carousel", build_caption_row(r), media_urls=urls)
+            else:
+                media_id = publish_post(ig_id, token, r["type"], build_caption_row(r), media_url=asset)
+            sheets.mark_published(r["_row"], now.isoformat())
+            print(f"     ✓ Publicado. Media ID: {media_id}")
+        except RuntimeError as e:
+            print(f"     ⚠️  Error: {e}")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="Epic.Plane — Publicador de Instagram (Módulo 2).")
     ap.add_argument("--check", action="store_true", help="Valida credenciales creando un contenedor de prueba (no publica).")
     ap.add_argument("--post-test", action="store_true", help="Publica un post de prueba REAL en la cuenta.")
-    ap.add_argument("--run", action="store_true", help="Publica del calendario los posts aprobados y vencidos.")
+    ap.add_argument("--sheet", action="store_true", help="Publica leyendo la Google Sheet (approved=TRUE, no publicado, vencido).")
+    ap.add_argument("--run", action="store_true", help="Publica del calendario JSON los posts aprobados y vencidos.")
     ap.add_argument("--month", help="Mes del calendario (YYYY-MM) para --run.")
     ap.add_argument("--dry-run", action="store_true", help="Con --run: muestra qué haría, sin publicar.")
     args = ap.parse_args()
@@ -274,6 +328,8 @@ def main() -> None:
             cmd_check(env)
         elif args.post_test:
             cmd_post_test(env)
+        elif args.sheet:
+            cmd_run_sheet(env, args.dry_run)
         elif args.run:
             month = args.month or dt.datetime.now(dt.timezone.utc).strftime("%Y-%m")
             cmd_run(env, month, args.dry_run)

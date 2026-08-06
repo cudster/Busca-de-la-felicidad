@@ -561,6 +561,11 @@ def main() -> None:
         metavar="ID",
         help="Desmarca posts (los vuelve a approved:false). Mismos formatos que --approve.",
     )
+    parser.add_argument(
+        "--to-sheet",
+        action="store_true",
+        help="Escribe/actualiza el calendario del mes en la Google Sheet (upsert por id).",
+    )
     args = parser.parse_args()
 
     year, month = _parse_month(args.month)
@@ -570,6 +575,19 @@ def main() -> None:
     # Modo aprobar/desaprobar: edita el .json de forma segura y re-exporta el .md.
     if args.approve or args.unapprove:
         _set_approval(year, month, json_path, args.approve, args.unapprove)
+        return
+
+    # Modo to-sheet: sube el calendario existente a la Google Sheet (sin regenerar).
+    if args.to_sheet:
+        if not json_path.exists():
+            sys.exit(f"No existe {json_path}. Genera el mes primero.")
+        data = json.loads(json_path.read_text(encoding="utf-8"))
+        try:
+            import sheets
+            n = sheets.write_calendar_to_sheet(data["posts"])
+        except Exception as e:
+            sys.exit(f"Error escribiendo a la Google Sheet: {e}")
+        print(f"✓ {n} posts escritos/actualizados en la Google Sheet.")
         return
 
     # Modo export-only: reconstruye el .md desde el .json ya editado.

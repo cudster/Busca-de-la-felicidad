@@ -1,6 +1,9 @@
 # NUNCA subir secretos al repo (contiene tokens de Meta y la API key de Anthropic)
 .env
 
+# Clave privada de la cuenta de servicio de Google (Sheets) — NUNCA subir
+credentials.json
+
 # Python
 __pycache__/
 *.pyc

@@ -97,3 +97,30 @@ Reglas de voz: inglés nativo casual-experto, hooks de máximo 8 palabras, prime
 - Prefiere delegar decisiones tácticas: Claude Code decide detalles técnicos directamente y avanza; pide validación solo en hitos.
 - Iterativo y secuencial: cerrar cada módulo con un entregable funcionando antes de pasar al siguiente.
 - Todo texto dirigido al dueño en español chileno; contenido para la audiencia en inglés (con versión ES).
+
+## Estado actual
+
+Última actualización: 2026-08-05.
+
+### Construido y funcionando (Sesiones 1-3)
+
+- **Módulo 1 — Generador** (`generate_content.py`): genera el calendario mensual de 20 posts vía API de Anthropic (`claude-sonnet-4-6`). Python arma el esqueleto determinístico (fechas Lun/Mar/Mié/Jue/Sáb, horarios 13:00 y 22:00 UTC, distribución de pilares 8/6/4/2, tipos, CTA afiliado en los 2 posts `pilot_path`); la IA rellena lo creativo (topic, hook, caption EN/ES, hashtags, visual_prompt). Escribe `calendar/YYYY-MM.json` + `content/YYYY-MM.md`. Comandos: `--month`, `--force`, `--export-only`, `--approve`/`--unapprove` (aceptan `P01`, `1`, id completo o `all`). Calendario de agosto 2026 generado y aprobado (20/20).
+- **Módulo 2 — Publicador** (`publish.py`): Instagram Graph API (crea contenedor + `media_publish`, con polling de `status_code` hasta FINISHED). Soporta imagen/carrusel/reel. Modos: `--check` (valida sin publicar), `--post-test` (post real), `--run [--month] [--dry-run]` (publica aprobados+vencidos+no publicados, marca `published:true`). Probado con un post real en @epic.plane.
+- **Módulo 3 — Assets** (`assets.py`): `prompts` (hoja de prompts visuales por post), `status`, `link` (empareja `assets/semana-N/pXX.*` → `media_url`/`media_urls` con URLs jsDelivr). Convención: imagen `pXX.jpg`, reel `pXX.mp4`, carrusel `pXX_1.jpg`…
+- **Setup Meta** (`setup_meta.py`): intercambia token corto→durable y descubre IDs. Cuenta @epic.plane (IG_USER_ID 17841431987534624), token de página durable y IDs en `.env`.
+- **Hosting + Scheduler**: repo público `cudster/Busca-de-la-felicidad`, assets servidos por jsDelivr. `.github/workflows/publish.yml` corre `publish.py --run` (cron 13:10/22:10 UTC + manual) y commitea de vuelta el calendario. Secrets `IG_USER_ID`/`META_PAGE_TOKEN` cargados; corrida manual verificada OK.
+- `.env` protegido por `.gitignore`. `credentials.json` (Google) también en `.gitignore`.
+
+### Capa de automatización — Google Sheets (ver `SETUP-AUTOMATIZACION.md`)
+
+Aprobación desde el celular en una **Google Sheet** + publicación 24/7 en la nube, sobre la cuenta dedicada **epic.plane85@gmail.com**.
+
+- **Sección 3 (Google Cloud + Sheet): ✅ lista.** Proyecto `epic-plane`, cuenta de servicio `epic-plane-bot`, `credentials.json` en la raíz (gitignored), APIs Sheets+Drive habilitadas. Hoja "Epic.plane Calendario" (pestaña `Calendar`) compartida con el bot como Editor. `SHEET_ID` en `.env`. Lectura y escritura verificadas.
+- **Sección 5 (código): ✅ lista.** `sheets.py` (módulo compartido; credenciales de archivo en dev o env var `GOOGLE_CREDENTIALS` en la nube; pestaña case-insensitive). Generador: `--to-sheet` hace upsert por `id` sin pisar `approved`/`feedback`/`asset_path`, con casillas de verificación, encabezado congelado y formato condicional (verde=aprobado / amarillo=feedback sin aprobar). Publicador: `--sheet [--dry-run]` lee filas `approved=TRUE & published=FALSE & vencidas`, publica y marca `published`/`published_at`. Calendario de agosto subido a la hoja (20/20 aprobados migrados desde el JSON). Probado.
+- **Sección 4 (GitHub Actions 24/7): pendiente.** Montar el publicador en la nube con Secrets `GOOGLE_CREDENTIALS`, `SHEET_ID`, `META_PAGE_TOKEN`, `IG_USER_ID`, corriendo `publish.py --sheet` por cron.
+
+**Nota de diseño:** en la hoja, la columna `asset_path` debe contener la **URL pública** del asset (jsDelivr u otra). Felipe puede pegarla a mano, o la automatizamos con `assets.py` cuando existan los medios. El publicador lee esa URL de la hoja.
+
+### Próximo paso
+
+Felipe genera los medios reales (Higgsfield) → pone la URL pública en `asset_path` de la hoja (o los enlazamos con `assets.py`) → prueba de publicación real desde la hoja → montar el publicador 24/7 en GitHub Actions (sección 4, en la cuenta dedicada). Reconciliar: el hosting jsDelivr exige repo público; decidir repo del stack en la cuenta dedicada.
