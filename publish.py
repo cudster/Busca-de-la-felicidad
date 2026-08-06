@@ -265,12 +265,15 @@ def build_caption_row(r: dict) -> str:
     return "\n\n".join(p for p in parts if p)
 
 
-def cmd_run_sheet(env, dry_run: bool) -> None:
-    """Publica desde la Google Sheet las filas approved=TRUE, published=FALSE y ya vencidas."""
+def cmd_run_sheet(env, dry_run: bool, only_post: str | None = None) -> None:
+    """Publica desde la Google Sheet las filas approved=TRUE, published=FALSE y ya vencidas.
+    Con only_post (ej 'P02' o el id completo) publica solo ese post."""
     import sheets
     ig_id, token = env["IG_USER_ID"], env["META_PAGE_TOKEN"]
     rows = sheets.read_approved_posts()
     now = dt.datetime.now(dt.timezone.utc)
+    if only_post:
+        rows = [r for r in rows if str(r.get("id", "")).endswith(only_post.upper())]
 
     due = []
     for r in rows:
@@ -313,6 +316,7 @@ def main() -> None:
     ap.add_argument("--check", action="store_true", help="Valida credenciales creando un contenedor de prueba (no publica).")
     ap.add_argument("--post-test", action="store_true", help="Publica un post de prueba REAL en la cuenta.")
     ap.add_argument("--sheet", action="store_true", help="Publica leyendo la Google Sheet (approved=TRUE, no publicado, vencido).")
+    ap.add_argument("--post", help="Con --sheet: publica solo este post (ej P02).")
     ap.add_argument("--run", action="store_true", help="Publica del calendario JSON los posts aprobados y vencidos.")
     ap.add_argument("--month", help="Mes del calendario (YYYY-MM) para --run.")
     ap.add_argument("--dry-run", action="store_true", help="Con --run: muestra qué haría, sin publicar.")
@@ -329,7 +333,7 @@ def main() -> None:
         elif args.post_test:
             cmd_post_test(env)
         elif args.sheet:
-            cmd_run_sheet(env, args.dry_run)
+            cmd_run_sheet(env, args.dry_run, args.post)
         elif args.run:
             month = args.month or dt.datetime.now(dt.timezone.utc).strftime("%Y-%m")
             cmd_run(env, month, args.dry_run)

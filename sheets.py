@@ -170,7 +170,9 @@ def batch_set_media(items: list[dict]) -> tuple[int, list[str]]:
             continue
         data.append({"range": rowcol_to_a1(row, acol), "values": [[it["asset_path"]]]})
         if it.get("preview_url"):
-            formula = f'=IMAGE("{it["preview_url"]}")'
+            # =IMAGE() con URLs externas fue bloqueado por Google; usamos un
+            # enlace "ver foto" que se abre con un toque desde el celular.
+            formula = f'=HYPERLINK("{it["preview_url"]}","ver foto")'
             data.append({"range": rowcol_to_a1(row, pcol), "values": [[formula]]})
     if data:
         ws.batch_update(data, value_input_option="USER_ENTERED")

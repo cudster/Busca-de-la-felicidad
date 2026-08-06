@@ -37,26 +37,40 @@ UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
       "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36")
 CAROUSEL_FRAMES = 4
 
-# Aviones/temas conocidos -> query de búsqueda limpia en Pexels.
+# Aviones/temas conocidos -> query de búsqueda. TODAS terminan en un sustantivo
+# de aviación (airplane/jet/aircraft) para no traer resultados fuera de tema
+# (ej. "SR-71 Blackbird" traía pájaros: por eso NO usamos "blackbird" a secas).
 AIRCRAFT = {
-    "sr-71": "SR-71 Blackbird", "blackbird": "SR-71 Blackbird", "concorde": "Concorde",
-    "787": "Boeing 787", "dreamliner": "Boeing 787", "a350": "Airbus A350",
-    "737": "Boeing 737", "767": "Boeing 767", "777": "Boeing 777", "747": "Boeing 747",
-    "spitfire": "Spitfire aircraft", "f-35": "F-35 fighter jet", "an-225": "Antonov aircraft",
-    "antonov": "Antonov aircraft", "typhoon": "Eurofighter Typhoon", "eurofighter": "Eurofighter Typhoon",
-    "super hornet": "F/A-18 fighter jet", "a320": "Airbus A320", "clipper": "seaplane",
-    "boeing 314": "seaplane", "gimli": "Boeing 767", "aloha": "Boeing 737",
+    "sr-71": "military jet aircraft", "concorde": "concorde airplane",
+    "787": "boeing 787 airplane", "dreamliner": "boeing 787 airplane", "a350": "airbus a350 airplane",
+    "737": "boeing airplane", "767": "boeing airplane", "777": "boeing airplane", "747": "boeing 747 airplane",
+    "spitfire": "vintage military airplane", "f-35": "fighter jet aircraft", "an-225": "cargo airplane",
+    "antonov": "cargo airplane", "typhoon": "fighter jet aircraft", "eurofighter": "fighter jet aircraft",
+    "super hornet": "fighter jet aircraft", "a320": "airbus airplane", "clipper": "seaplane airplane",
+    "boeing 314": "seaplane airplane", "gimli": "boeing airplane", "aloha": "boeing 737 airplane",
 }
 SUBJECT = {
-    "turbofan": "jet engine", "engine": "jet engine", "winglet": "airplane wing",
+    "turbofan": "jet engine airplane", "engine": "jet engine airplane", "winglet": "airplane wing",
     "cockpit": "airplane cockpit", "fly-by-wire": "airplane cockpit",
-    "cabin": "airplane cabin", "pressuriz": "airplane cabin", "instrument": "airplane cockpit",
-    "carrier": "aircraft carrier jet",
+    "cabin": "airplane cabin interior", "pressuriz": "airplane cabin interior",
+    "instrument": "airplane cockpit", "carrier": "fighter jet aircraft carrier",
 }
 PILLAR_FALLBACK = {
-    "technical_awe": "jet aircraft", "spotting": "airplane sky",
-    "aviation_story": "airliner", "pilot_path": "airplane cockpit",
+    "technical_awe": "jet airplane", "spotting": "airplane flying sky",
+    "aviation_story": "airliner airplane", "pilot_path": "airplane cockpit",
 }
+
+# Un resultado se acepta solo si su texto descriptivo (alt) menciona aviación.
+AVIATION_WORDS = (
+    "plane", "airplane", "aeroplane", "aircraft", "jet", "aviation", "flight",
+    "flying", "airline", "airliner", "airport", "runway", "cockpit", "fighter",
+    "boeing", "airbus", "fuselage", "wing", "hangar", "aviator", "helicopter",
+)
+
+
+def is_aviation(text: str) -> bool:
+    t = (text or "").lower()
+    return any(w in t for w in AVIATION_WORDS)
 
 
 def load_key() -> str:
@@ -87,10 +101,14 @@ def _get(url: str, key: str) -> dict:
 
 def search_photos(query: str, key: str, n: int) -> list[dict]:
     url = ("https://api.pexels.com/v1/search?query=" + urllib.parse.quote(query) +
-           f"&per_page={max(n, 1)}&orientation=portrait")
+           "&per_page=20&orientation=portrait")
     photos = _get(url, key).get("photos", [])
+    # Quedarse solo con fotos cuyo alt/descripción sea de aviación.
+    good = [p for p in photos if is_aviation(p.get("alt", ""))]
+    chosen = good[:n] if good else photos[:n]  # si ninguna pasa el filtro, no dejar el post vacío
     return [{"large": p["src"]["large2x"], "medium": p["src"]["medium"],
-             "by": p.get("photographer", "")} for p in photos[:n]]
+             "by": p.get("photographer", ""), "aviation": is_aviation(p.get("alt", ""))}
+            for p in chosen]
 
 
 def search_video(query: str, key: str) -> dict | None:
@@ -118,8 +136,9 @@ def media_for_post(post: dict, key: str, query: str) -> dict | None:
     if not photos:
         return None
     asset = ",".join(p["large"] for p in photos)
+    warn = "" if photos[0].get("aviation") else "  ⚠ revisar (no confirmé aviación)"
     return {"asset_path": asset, "preview_url": photos[0]["medium"],
-            "note": f"{len(photos)} foto(s) · {photos[0]['by']}"}
+            "note": f"{len(photos)} foto(s) · {photos[0]['by']}{warn}"}
 
 
 def main() -> None:
@@ -165,10 +184,10 @@ def main() -> None:
 
     import sheets
     n_ok, missing = sheets.batch_set_media(items)
-    print(f"\n✓ {n_ok} post(s) con asset_path + miniatura escritos en la Google Sheet.")
+    print(f"\n✓ {n_ok} post(s) con asset_path + enlace de preview escritos en la Google Sheet.")
     if missing:
         print(f"  (no encontré en la hoja: {', '.join(missing)} — ¿corriste --to-sheet?)")
-    print("  Abre la hoja en el celular: la columna 'preview' muestra la miniatura para revisar.")
+    print("  En la hoja, la columna 'preview' tiene un enlace 'ver foto': tócalo para ver la imagen.")
 
 
 if __name__ == "__main__":
