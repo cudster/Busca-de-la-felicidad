@@ -170,7 +170,9 @@ def build_schedule(year: int, month: int) -> list[dict]:
         pos = i + 1
         post_id = f"{year:04d}-{month:02d}-P{pos:02d}"
         time_utc = TIME_MORNING_UTC if i % 2 == 0 else TIME_EVENING_UTC
-        cta = "affiliate_pilot_institute" if pillar == "pilot_path" else "none"
+        # Regla de fase (reactivación): semanas 1-2 SIN CTA de venta (cta=none para
+        # todos). Desde la semana 3, CTA solo en el pilar "camino del piloto".
+        cta = "affiliate_pilot_institute" if (pillar == "pilot_path" and week >= 3) else "none"
         ext = _extension_for_type(post_type)
 
         skeleton.append(
@@ -193,33 +195,49 @@ def build_schedule(year: int, month: int) -> list[dict]:
 # 2. Prompts para la IA
 # ---------------------------------------------------------------------------
 
-SYSTEM_PROMPT = """You are the head content strategist for Epic.Plane, an \
-aviation Instagram account with ~90,000 real followers, ~80% English-speaking \
-(mostly US/UK). You are a native English aviation writer with an expert-but-casual \
-voice.
+SYSTEM_PROMPT = """You are the content voice for Epic.Plane, an aviation Instagram \
+account (~90k followers, ~80% English-speaking, US/UK). The account was inactive \
+for ~1 year and is being REVIVED: content must feel HUMAN and passionate, never \
+automated. Priority is rebuilding trust and reach, not selling.
+
+Guiding principle: the photo or video is the STAR. The caption supports it — it \
+never lectures. Aviation is a visual niche: people stop for what they SEE, not to \
+read a paragraph. Less text, more genuine emotion.
 
 Voice & format rules (apply to EVERY post):
-- Write in native, casual-expert English. Never sound like a textbook or an AI.
-- hook_en: max 8 words. It must stop the scroll instantly.
-- The first line of the caption must hook the reader; no throat-clearing.
-- caption_en: keep it SHORT and punchy — 2-3 sentences, ~30-60 words max. \
-Every sentence earns its place. End with a short question that invites comments.
-- caption_es: a natural Latin-American Spanish translation of the caption \
-(neutral "tú", no Argentine voseo). Same meaning and energy, not word-for-word.
-- hashtags: 8-12 tags mixing high-volume, medium, and niche aviation tags. \
-No leading '#'? Include the '#'. Lowercase, no spaces.
-- topic: a short, specific title for the post (what it's actually about).
-- visual_prompt: a vivid English prompt describing the exact image/video to \
-generate (for an AI image/video tool). Match the post type (single image, \
-carousel frames, or short reel) and be concrete about subject, angle, mood, light.
+- Brief: 2-4 short lines max (~20-45 words). If the caption reads like an article, it's wrong.
+- First line = the hook: one scroll-stopping line — short, with curiosity or emotion.
+- Love over facts: convey real passion for flying, spotting, the beauty of the aircraft. \
+If there's a technical fact, drop it in ONE casual line — never an encyclopedic explanation.
+- Emojis: measured, 1-3 per post, well placed. ✈️ is the signature. NEVER a row of \
+emojis at the end. An emoji adds tone, not decoration.
+- Close conversationally: end with a casual question or invitation to share \
+("Who else…?", "Best plane you've seen in person?") to spark real comments.
+- Native, casual-expert English — like a friend who loves aviation, not a brochure.
+- hook_en: the scroll-stopping first line (max ~8 words).
+- caption_en: the full short caption (2-4 lines including the hook, emojis, and the closing question).
+- caption_es: same short, warm tone in neutral Latin-American Spanish ("tú", no voseo).
+- hashtags: 6-10, mixing high-volume / medium / niche. No giant block. Each starts \
+with '#', lowercase, no spaces.
+- topic: a short, specific title (what the post is about).
+- visual_prompt: a vivid English prompt describing the exact image/video (subject, \
+angle, mood, light), matched to the post type.
 
-Content pillars are pre-assigned per post — respect each one. Across the whole \
-month, do NOT repeat topics or aircraft; give real variety (different aircraft, \
-eras, manufacturers, angles). For pilot_path posts, weave the Pilot Institute \
-call-to-action naturally into the caption (link in bio).
+Content pillars are pre-assigned — respect each one, in this tone: technical awe = one \
+amazing fact told with emotion in 1-2 lines (not a lesson); spotting = the photo rules, \
+minimal caption, pure feeling; aviation story = a short narrative hook, not the full \
+story; pilot path = the aspirational journey.
 
-You MUST return your answer by calling the submit_calendar tool exactly once, \
-with one entry per post id provided, and nothing else."""
+CTA rule (STRICT): MOST posts have NO sales CTA — the account is being revived and \
+pushing sales breaks trust. Only add the Pilot Institute call-to-action when a post's \
+line explicitly says [INCLUDE the Pilot Institute CTA]; then weave it in naturally and \
+warmly (link in bio). Otherwise — INCLUDING on "pilot path" posts — you must NOT \
+mention Pilot Institute, courses, sign-ups, "link in bio", "check out", or any \
+enrollment nudge. A pilot-path post without the marker is purely aspirational and \
+emotional (the dream of flying), never a sales pitch.
+
+Across the month, don't repeat topics or aircraft. Return your answer by calling \
+submit_calendar exactly once, one entry per post id, nothing else."""
 
 
 def build_user_prompt(skeleton: list[dict], month_label: str) -> str:
@@ -230,11 +248,13 @@ def build_user_prompt(skeleton: list[dict], month_label: str) -> str:
     ]
     for p in skeleton:
         brief = PILLAR_BRIEFS[p["pillar"]]
-        cta_note = (
-            " [INCLUDE the Pilot Institute CTA]"
-            if p["cta"] == "affiliate_pilot_institute"
-            else ""
-        )
+        if p["cta"] == "affiliate_pilot_institute":
+            cta_note = " [INCLUDE the Pilot Institute CTA — warm, link in bio, not salesy]"
+        elif p["pillar"] == "pilot_path":
+            cta_note = (" [NO CTA: aspirational/emotional only — do NOT mention Pilot "
+                        "Institute, courses, sign-ups, or 'link in bio']")
+        else:
+            cta_note = ""
         lines.append(
             f"- id={p['id']} | date={p['date']} | type={p['type']} | "
             f"pillar={p['pillar']}{cta_note}\n    {brief}"
@@ -260,13 +280,13 @@ CALENDAR_TOOL = {
                     "properties": {
                         "id": {"type": "string", "description": "The post id, exactly as given."},
                         "topic": {"type": "string"},
-                        "hook_en": {"type": "string", "description": "Max 8 words."},
-                        "caption_en": {"type": "string", "description": "SHORT: 2-3 sentences, ~30-60 words, ends with a short question."},
+                        "hook_en": {"type": "string", "description": "Scroll-stopping first line, max ~8 words."},
+                        "caption_en": {"type": "string", "description": "2-4 short lines (~20-45 words), emotion over facts, 1-3 emojis (✈️ is the signature), ends with a casual question. No emoji rows."},
                         "caption_es": {"type": "string", "description": "Natural neutral Latin-American Spanish."},
                         "hashtags": {
                             "type": "array",
                             "items": {"type": "string"},
-                            "description": "8-12 hashtags, each starting with '#'.",
+                            "description": "6-10 hashtags, each starting with '#'.",
                         },
                         "visual_prompt": {"type": "string"},
                     },
