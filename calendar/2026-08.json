@@ -3,7 +3,7 @@
   "posts": [
     {
       "id": "2026-08-P01",
-      "date": "2026-08-01",
+      "date": "2026-08-08",
       "time_utc": "13:00",
       "type": "carousel",
       "pillar": "technical_awe",
@@ -29,7 +29,7 @@
     },
     {
       "id": "2026-08-P02",
-      "date": "2026-08-03",
+      "date": "2026-08-10",
       "time_utc": "22:00",
       "type": "image",
       "pillar": "spotting",
@@ -55,7 +55,7 @@
     },
     {
       "id": "2026-08-P03",
-      "date": "2026-08-04",
+      "date": "2026-08-11",
       "time_utc": "13:00",
       "type": "carousel",
       "pillar": "aviation_story",
@@ -81,7 +81,7 @@
     },
     {
       "id": "2026-08-P04",
-      "date": "2026-08-05",
+      "date": "2026-08-12",
       "time_utc": "22:00",
       "type": "reel",
       "pillar": "technical_awe",
@@ -107,7 +107,7 @@
     },
     {
       "id": "2026-08-P05",
-      "date": "2026-08-06",
+      "date": "2026-08-13",
       "time_utc": "13:00",
       "type": "reel",
       "pillar": "pilot_path",
@@ -133,7 +133,7 @@
     },
     {
       "id": "2026-08-P06",
-      "date": "2026-08-08",
+      "date": "2026-08-15",
       "time_utc": "22:00",
       "type": "image",
       "pillar": "spotting",
@@ -159,7 +159,7 @@
     },
     {
       "id": "2026-08-P07",
-      "date": "2026-08-10",
+      "date": "2026-08-17",
       "time_utc": "13:00",
       "type": "carousel",
       "pillar": "technical_awe",
@@ -185,7 +185,7 @@
     },
     {
       "id": "2026-08-P08",
-      "date": "2026-08-11",
+      "date": "2026-08-18",
       "time_utc": "22:00",
       "type": "carousel",
       "pillar": "aviation_story",
@@ -211,7 +211,7 @@
     },
     {
       "id": "2026-08-P09",
-      "date": "2026-08-12",
+      "date": "2026-08-19",
       "time_utc": "13:00",
       "type": "reel",
       "pillar": "spotting",
@@ -263,8 +263,8 @@
     },
     {
       "id": "2026-08-P11",
-      "date": "2026-08-15",
-      "time_utc": "13:00",
+      "date": "2026-08-20",
+      "time_utc": "22:00",
       "type": "image",
       "pillar": "spotting",
       "topic": "SR-71 Blackbird contrail at altitude",
@@ -289,8 +289,8 @@
     },
     {
       "id": "2026-08-P12",
-      "date": "2026-08-17",
-      "time_utc": "22:00",
+      "date": "2026-08-22",
+      "time_utc": "13:00",
       "type": "carousel",
       "pillar": "aviation_story",
       "topic": "Air New Zealand Flight 901 — Mount Erebus disaster",
@@ -315,8 +315,8 @@
     },
     {
       "id": "2026-08-P13",
-      "date": "2026-08-18",
-      "time_utc": "13:00",
+      "date": "2026-08-24",
+      "time_utc": "22:00",
       "type": "carousel",
       "pillar": "technical_awe",
       "topic": "Why plane wings flex — and why that's a good thing",
@@ -341,8 +341,8 @@
     },
     {
       "id": "2026-08-P14",
-      "date": "2026-08-19",
-      "time_utc": "22:00",
+      "date": "2026-08-25",
+      "time_utc": "13:00",
       "type": "reel",
       "pillar": "pilot_path",
       "topic": "The path from zero hours to commercial pilot",
@@ -367,8 +367,8 @@
     },
     {
       "id": "2026-08-P15",
-      "date": "2026-08-20",
-      "time_utc": "13:00",
+      "date": "2026-08-26",
+      "time_utc": "22:00",
       "type": "image",
       "pillar": "spotting",
       "topic": "Airbus A350 wing detail in diffused light",
@@ -393,8 +393,8 @@
     },
     {
       "id": "2026-08-P16",
-      "date": "2026-08-22",
-      "time_utc": "22:00",
+      "date": "2026-08-27",
+      "time_utc": "13:00",
       "type": "reel",
       "pillar": "technical_awe",
       "topic": "How ground effect helps aircraft during landing",
@@ -445,7 +445,7 @@
     },
     {
       "id": "2026-08-P18",
-      "date": "2026-08-25",
+      "date": "2026-08-29",
       "time_utc": "22:00",
       "type": "reel",
       "pillar": "spotting",
@@ -471,7 +471,7 @@
     },
     {
       "id": "2026-08-P19",
-      "date": "2026-08-26",
+      "date": "2026-08-31",
       "time_utc": "13:00",
       "type": "carousel",
       "pillar": "technical_awe",
@@ -497,7 +497,7 @@
     },
     {
       "id": "2026-08-P20",
-      "date": "2026-08-27",
+      "date": "2026-09-01",
       "time_utc": "22:00",
       "type": "reel",
       "pillar": "technical_awe",
