@@ -71,27 +71,27 @@ TIME_EVENING_UTC = "22:00"
 #   aviation_story = 4 (20%)  -> historias de aviación
 #   pilot_path     = 2 (10%)  -> camino del piloto (aquí va el CTA de afiliado)
 PILLAR_PATTERN = [
-    "technical_awe",  # 1
-    "spotting",       # 2
-    "aviation_story", # 3
-    "technical_awe",  # 4
+    "spotting",       # 1   (post-métricas: spotting/visual épico es el pilar más fuerte)
+    "technical_awe",  # 2
+    "spotting",       # 3
+    "aviation_story", # 4
     "pilot_path",     # 5
     "spotting",       # 6
     "technical_awe",  # 7
-    "aviation_story", # 8
-    "spotting",       # 9
+    "spotting",       # 8
+    "aviation_story", # 9
     "technical_awe",  # 10
     "spotting",       # 11
-    "aviation_story", # 12
-    "technical_awe",  # 13
+    "technical_awe",  # 12
+    "spotting",       # 13
     "pilot_path",     # 14
     "spotting",       # 15
     "technical_awe",  # 16
     "aviation_story", # 17
     "spotting",       # 18
     "technical_awe",  # 19
-    "technical_awe",  # 20
-]
+    "aviation_story", # 20
+]  # spotting=8, technical_awe=6, aviation_story=4, pilot_path=2
 
 # Descripción de cada pilar para el prompt del modelo.
 PILLAR_BRIEFS = {
@@ -116,12 +116,14 @@ PILLAR_BRIEFS = {
 
 # Tipo de post por pilar (rotación determinística para dar variedad).
 def _post_type(pillar: str, pillar_seq_index: int) -> str:
-    if pillar == "technical_awe":
-        return "carousel" if pillar_seq_index % 2 == 0 else "reel"
+    # Post-métricas: priorizar REELS (más alcance) y visual épico; minimizar
+    # carruseles educativos (los que menos rendían).
     if pillar == "spotting":
-        return "image" if pillar_seq_index % 3 != 2 else "reel"
+        return "reel" if pillar_seq_index % 2 == 0 else "image"
+    if pillar == "technical_awe":
+        return "reel" if pillar_seq_index % 2 == 0 else "image"
     if pillar == "aviation_story":
-        return "carousel"
+        return "carousel" if pillar_seq_index % 2 == 0 else "reel"
     if pillar == "pilot_path":
         return "reel"
     return "image"
@@ -204,29 +206,30 @@ Guiding principle: the photo or video is the STAR. The caption supports it — i
 never lectures. Aviation is a visual niche: people stop for what they SEE, not to \
 read a paragraph. Less text, more genuine emotion.
 
-Voice & format rules (apply to EVERY post):
-- Brief: 2-4 short lines max (~20-45 words). If the caption reads like an article, it's wrong.
-- First line = the hook: one scroll-stopping line — short, with curiosity or emotion.
-- Love over facts: convey real passion for flying, spotting, the beauty of the aircraft. \
-If there's a technical fact, drop it in ONE casual line — never an encyclopedic explanation.
-- Emojis: measured, 1-3 per post, well placed. ✈️ is the signature. NEVER a row of \
-emojis at the end. An emoji adds tone, not decoration.
-- Close conversationally: end with a casual question or invitation to share \
-("Who else…?", "Best plane you've seen in person?") to spark real comments.
-- Native, casual-expert English — like a friend who loves aviation, not a brochure.
+Voice & format rules (apply to EVERY post) — tuned from THIS account's own data: its \
+biggest posts (4,000-11,600 likes, dozens of comments) were SHORT, emoji-driven, and \
+above all ASKED for a comment; its educational-paragraph posts flop (~12 likes). So:
+- ULTRA-short: 1-2 lines, ~10-25 words. Shorter is better. Never a paragraph.
+- Lead with awe/excitement, not a lesson. If there's a fact, ONE punchy line — the rest is feeling.
+- MANDATORY interactive hook — every post ENDS with an engagement bait that begs a comment: \
+a guess ("Can you name this jet?", "Guess the airport 👇"), a this-or-that ("😍 or 🤢?"), or a \
+direct ask ("Who else grew up loving this?", "Drop a ✈️ if you'd fly this"). COMMENTS are the \
+#1 goal — the algorithm rewards them and this account grew on them.
+- Emojis: 1-3, well placed. ✈️ is the signature; reaction emojis (😱🔥👀😍) fit the excitement. \
+Never a row of emojis.
+- Native, casual English — like a hyped aviation friend, not a brochure.
 - hook_en: the scroll-stopping first line (max ~8 words).
-- caption_en: the full short caption (2-4 lines including the hook, emojis, and the closing question).
-- caption_es: same short, warm tone in neutral Latin-American Spanish ("tú", no voseo).
-- hashtags: 6-10, mixing high-volume / medium / niche. No giant block. Each starts \
-with '#', lowercase, no spaces.
+- caption_en: the full short caption (1-2 lines: the hook + the interactive question, with emojis).
+- caption_es: same ultra-short, hyped tone in neutral Latin-American Spanish ("tú", no voseo).
+- hashtags: 6-10, mixing high-volume / medium / niche, lowercase, each starting with '#'.
 - topic: a short, specific title (what the post is about).
-- visual_prompt: a vivid English prompt describing the exact image/video (subject, \
-angle, mood, light), matched to the post type.
+- visual_prompt: a vivid English prompt for the exact image/video (subject, angle, mood, light), \
+matched to the post type — aim for jaw-dropping, scroll-stopping visuals.
 
 Content pillars are pre-assigned — respect each one, in this tone: technical awe = one \
-amazing fact told with emotion in 1-2 lines (not a lesson); spotting = the photo rules, \
-minimal caption, pure feeling; aviation story = a short narrative hook, not the full \
-story; pilot path = the aspirational journey.
+jaw-dropping fact + a "guess / what do you think?" hook; spotting = pure eye-candy, one line \
+of feeling + an engagement ask; aviation story = a one-line teaser hook, not the full story; \
+pilot path = the aspirational dream of flying.
 
 CTA rule (STRICT): MOST posts have NO sales CTA — the account is being revived and \
 pushing sales breaks trust. Only add the Pilot Institute call-to-action when a post's \
@@ -281,7 +284,7 @@ CALENDAR_TOOL = {
                         "id": {"type": "string", "description": "The post id, exactly as given."},
                         "topic": {"type": "string"},
                         "hook_en": {"type": "string", "description": "Scroll-stopping first line, max ~8 words."},
-                        "caption_en": {"type": "string", "description": "2-4 short lines (~20-45 words), emotion over facts, 1-3 emojis (✈️ is the signature), ends with a casual question. No emoji rows."},
+                        "caption_en": {"type": "string", "description": "ULTRA-short (1-2 lines, ~10-25 words), hyped/awe, 1-3 emojis (✈️ signature). MUST end with an interactive hook that begs a comment (guess / this-or-that / 'who else?'). No paragraphs, no emoji rows."},
                         "caption_es": {"type": "string", "description": "Natural neutral Latin-American Spanish."},
                         "hashtags": {
                             "type": "array",

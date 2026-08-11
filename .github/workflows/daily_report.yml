@@ -1,0 +1,25 @@
+name: Reporte diario por correo
+
+# Un correo al día con el resultado del último post + feedback.
+# 12:00 UTC ≈ 8:00 AM en Chile. También se puede lanzar a mano.
+on:
+  schedule:
+    - cron: "0 12 * * *"
+  workflow_dispatch:
+
+jobs:
+  email:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Enviar reporte del último post
+        env:
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          META_PAGE_TOKEN: ${{ secrets.META_PAGE_TOKEN }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          EMAIL_TO: felipecood@gmail.com
+        run: python daily_email.py
