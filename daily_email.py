@@ -31,11 +31,25 @@ import urllib.parse
 import urllib.request
 import json
 from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.image import MIMEImage
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 GRAPH = "https://graph.facebook.com/v21.0/"
 DEFAULT_TO = "felipecood@gmail.com"
+
+# Story diaria: rota tema (query) y frase (prompt) por día para que nunca se repita.
+STORY_QUERIES = [
+    "airplane sunset", "fighter jet sky", "airport runway plane", "airplane cockpit",
+    "vintage aircraft", "airplane wing clouds", "jumbo jet airport", "airplane golden hour",
+    "biplane airshow", "seaplane water", "airplane night runway", "commercial jet landing",
+]
+STORY_PROMPTS = [
+    "Guess the aircraft 👇", "Rate this view 1–10 ⭐", "Window or aisle? ✈️",
+    "Tag someone who'd love this ✈️", "Where would you fly this? 🌍", "Boeing or Airbus? 👇",
+    "This never gets old 😍 Who's with me?", "Best sound in aviation? 🔊",
+]
 
 
 def cfg() -> dict:
@@ -73,6 +87,45 @@ def insights(mid: str, tok: str):
         if "permission" in (d.get("_error", "") or "").lower():
             return None
     return {}
+
+
+def story_of_day(c: dict):
+    """Elige una foto vertical de aviación distinta cada día (Pexels) + una frase para la story."""
+    key = c.get("PEXELS_API_KEY")
+    if not key:
+        return None
+    day = dt.date.today().toordinal()
+    q = STORY_QUERIES[day % len(STORY_QUERIES)]
+    page = (day // len(STORY_QUERIES)) % 5 + 1
+    ua = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
+    try:
+        u = ("https://api.pexels.com/v1/search?query=" + urllib.parse.quote(q) +
+             "&orientation=portrait&per_page=20&page=" + str(page))
+        req = urllib.request.Request(u, headers={"Authorization": key, "User-Agent": ua})
+        with urllib.request.urlopen(req, timeout=30) as r:
+            photos = json.load(r).get("photos", [])
+        if not photos:
+            return None
+        p = photos[day % len(photos)]
+        img_url = p["src"].get("large") or p["src"].get("original")
+        ireq = urllib.request.Request(img_url, headers={"User-Agent": ua})
+        with urllib.request.urlopen(ireq, timeout=30) as r:
+            img = r.read()
+        return {"img": img, "credit": p.get("photographer", ""),
+                "prompt": STORY_PROMPTS[day % len(STORY_PROMPTS)], "query": q}
+    except Exception:
+        return None
+
+
+def story_html(s: dict) -> str:
+    return f"""\
+<div style="font-family:system-ui,Arial,sans-serif;max-width:520px;color:#111;margin-top:22px;border-top:1px solid #e6e6e6;padding-top:16px">
+  <h3 style="margin:0 0 6px">📖 Story de hoy</h3>
+  <p style="color:#666;margin:0 0 8px">Sube esta imagen a tu Instagram Story y ponle este texto encima:</p>
+  <p style="font-weight:700;font-size:18px;margin:0 0 12px">"{s['prompt']}"</p>
+  <img src="cid:storyimg" alt="story" style="width:250px;max-width:80%;border-radius:12px;display:block"/>
+  <p style="color:#999;font-size:12px;margin-top:8px">Foto: {s['credit']} · Pexels · tema "{s['query']}". La imagen va también adjunta abajo para que la guardes al carrete.</p>
+</div>"""
 
 
 def build(c: dict):
@@ -149,19 +202,28 @@ def build(c: dict):
     return subject, body
 
 
-def send(c: dict, subject: str, body: str) -> None:
+def send(c: dict, subject: str, body: str, story_img: bytes | None = None) -> None:
     user = c.get("GMAIL_USER")
     pw = c.get("GMAIL_APP_PASSWORD")
     to = c.get("EMAIL_TO", DEFAULT_TO)
     if not user or not pw:
         raise SystemExit("Faltan GMAIL_USER / GMAIL_APP_PASSWORD (env o .env).")
-    msg = MIMEText(body, "html", "utf-8")
-    msg["Subject"] = subject
-    msg["From"] = user
-    msg["To"] = to
+    root = MIMEMultipart("related")
+    root["Subject"] = subject
+    root["From"] = user
+    root["To"] = to
+    root.attach(MIMEText(body, "html", "utf-8"))
+    if story_img:
+        inline = MIMEImage(story_img, "jpeg")
+        inline.add_header("Content-ID", "<storyimg>")
+        inline.add_header("Content-Disposition", "inline", filename="epicplane-story.jpg")
+        root.attach(inline)
+        att = MIMEImage(story_img, "jpeg")
+        att.add_header("Content-Disposition", "attachment", filename="epicplane-story.jpg")
+        root.attach(att)
     with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=ssl.create_default_context()) as s:
         s.login(user, pw)
-        s.sendmail(user, [to], msg.as_string())
+        s.sendmail(user, [to], root.as_string())
     print(f"✓ Correo enviado a {to}")
 
 
@@ -176,11 +238,18 @@ def main() -> None:
     if not r:
         raise SystemExit("No hay posts para reportar.")
     subject, body = r
+    story = story_of_day(c)
+    if story:
+        body += story_html(story)
     if args.dry_run:
         print("ASUNTO:", subject)
         print(body)
+        if story:
+            print(f"\n[STORY] tema='{story['query']}' | frase='{story['prompt']}' | imagen={len(story['img'])} bytes")
+        else:
+            print("\n[STORY] no se pudo generar (falta PEXELS_API_KEY o sin resultados).")
         return
-    send(c, subject, body)
+    send(c, subject, body, story_img=story["img"] if story else None)
 
 
 if __name__ == "__main__":
