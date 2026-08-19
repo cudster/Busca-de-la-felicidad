@@ -26,3 +26,10 @@ def load_facts(niche: str, base: Path = ROOT) -> list[dict]:
         return []
     with path.open(encoding="utf-8", newline="") as f:
         return list(csv.DictReader(f))
+
+
+def load_news(niche: str, base: Path = ROOT) -> list[dict]:
+    path = base / "data" / "news" / f"{niche}.json"
+    if not path.exists():
+        return []
+    return json.loads(path.read_text(encoding="utf-8"))

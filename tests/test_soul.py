@@ -35,3 +35,15 @@ def test_load_facts_reads_rows(tmp_path):
 
 def test_load_facts_missing_returns_empty(tmp_path):
     assert soul.load_facts("nope", base=tmp_path) == []
+
+
+def test_load_news_reads_json(tmp_path):
+    d = tmp_path / "data" / "news"
+    d.mkdir(parents=True)
+    (d / "demo.json").write_text('[{"title":"t","summary":"s","url":"u","date":"d"}]', encoding="utf-8")
+    news = soul.load_news("demo", base=tmp_path)
+    assert news[0]["title"] == "t"
+
+
+def test_load_news_missing_returns_empty(tmp_path):
+    assert soul.load_news("nope", base=tmp_path) == []
