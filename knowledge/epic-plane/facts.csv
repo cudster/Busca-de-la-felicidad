@@ -1,0 +1,9 @@
+id,subject,fact,detail,source,tags,pillar
+F01,SR-71 Blackbird,Its titanium came largely from the USSR via shell companies,The CIA secretly bought Soviet titanium to build a plane meant to spy on the USSR,https://en.wikipedia.org/wiki/Lockheed_SR-71_Blackbird,coldwar military records,technical_awe
+F02,Concorde,It flew at Mach 2 and the airframe stretched ~20cm from the heat,Cruising friction heated the fuselage enough to visibly lengthen it in flight,https://en.wikipedia.org/wiki/Concorde,supersonic retro icon,aviation_story
+F03,Boeing 747,The upper deck exists because Boeing thought jets would be replaced by SSTs,The hump let the nose open for cargo once passenger 747s became obsolete (they didn't),https://en.wikipedia.org/wiki/Boeing_747,queen widebody icon,technical_awe
+F04,Gimli Glider,An Air Canada 767 ran out of fuel at 41000 ft and glided to a safe landing,A metric conversion error left it dry mid-flight; the crew deadstick-landed on a drag strip,https://en.wikipedia.org/wiki/Gimli_Glider,incident glide legendary,aviation_story
+F05,GE90,The GE90-115B fan blades are so big the engine is wider than a 737 fuselage,It holds the record for highest thrust of any jet engine,https://en.wikipedia.org/wiki/General_Electric_GE90,engine record powerplant,technical_awe
+F06,An-225 Mriya,It had six engines and was the heaviest aircraft ever built,Only one was ever completed; it could carry 250 tonnes,https://en.wikipedia.org/wiki/Antonov_An-225_Mriya,cargo giant record,spotting
+F07,Ground effect,Airliners "float" just before touchdown because a cushion of air forms under the wing,The trapped air between wing and runway briefly increases lift,https://en.wikipedia.org/wiki/Ground_effect_(aerodynamics),aerodynamics landing,technical_awe
+F08,Contrails,Contrails are clouds made of ice crystals forming on jet exhaust,They only form when the upper air is cold and humid enough,https://en.wikipedia.org/wiki/Contrail,weather sky spotting,spotting

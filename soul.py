@@ -18,3 +18,11 @@ def load_persona(niche: str, base: Path = ROOT) -> str:
             f"Crea persona/{niche}.md."
         )
     return path.read_text(encoding="utf-8")
+
+
+def load_facts(niche: str, base: Path = ROOT) -> list[dict]:
+    path = base / "knowledge" / niche / "facts.csv"
+    if not path.exists():
+        return []
+    with path.open(encoding="utf-8", newline="") as f:
+        return list(csv.DictReader(f))
