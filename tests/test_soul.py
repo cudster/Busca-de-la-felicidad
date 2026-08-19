@@ -47,3 +47,21 @@ def test_load_news_reads_json(tmp_path):
 
 def test_load_news_missing_returns_empty(tmp_path):
     assert soul.load_news("nope", base=tmp_path) == []
+
+
+def test_assign_sources_uses_fact_and_news():
+    skeleton = [
+        {"id": "P01", "pillar": "technical_awe"},
+        {"id": "P02", "pillar": "spotting"},
+        {"id": "P03", "pillar": "spotting"},
+    ]
+    facts = [
+        {"id": "F1", "subject": "SR-71", "fact": "fast", "detail": "d", "pillar": "technical_awe"},
+        {"id": "F2", "subject": "An-225", "fact": "big", "detail": "d", "pillar": "spotting"},
+    ]
+    news = [{"title": "N1", "summary": "news", "url": "u", "date": "d"}]
+    out = soul.assign_sources(skeleton, facts, news, reaction_every=3)
+    assert out[0]["source_kind"] == "fact"
+    assert out[0]["source_text"] == "fast"
+    assert out[2]["source_kind"] == "news"       # el 3er post es slot de reacción
+    assert out[2]["source_text"] == "N1"

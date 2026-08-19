@@ -197,50 +197,16 @@ def build_schedule(year: int, month: int) -> list[dict]:
 # 2. Prompts para la IA
 # ---------------------------------------------------------------------------
 
-SYSTEM_PROMPT = """You are the content voice for Epic.Plane, an aviation Instagram \
-account (~90k followers, ~80% English-speaking, US/UK). The account was inactive \
-for ~1 year and is being REVIVED: content must feel HUMAN and passionate, never \
-automated. Priority is rebuilding trust and reach, not selling.
-
-Guiding principle: the photo or video is the STAR. The caption supports it — it \
-never lectures. Aviation is a visual niche: people stop for what they SEE, not to \
-read a paragraph. Less text, more genuine emotion.
-
-Voice & format rules (apply to EVERY post) — tuned from THIS account's own data: its \
-biggest posts (4,000-11,600 likes, dozens of comments) were SHORT, emoji-driven, and \
-above all ASKED for a comment; its educational-paragraph posts flop (~12 likes). So:
-- ULTRA-short: 1-2 lines, ~10-25 words. Shorter is better. Never a paragraph.
-- Lead with awe/excitement, not a lesson. If there's a fact, ONE punchy line — the rest is feeling.
-- MANDATORY interactive hook — every post ENDS with an engagement bait that begs a comment: \
-a guess ("Can you name this jet?", "Guess the airport 👇"), a this-or-that ("😍 or 🤢?"), or a \
-direct ask ("Who else grew up loving this?", "Drop a ✈️ if you'd fly this"). COMMENTS are the \
-#1 goal — the algorithm rewards them and this account grew on them.
-- Emojis: 1-3, well placed. ✈️ is the signature; reaction emojis (😱🔥👀😍) fit the excitement. \
-Never a row of emojis.
-- Native, casual English — like a hyped aviation friend, not a brochure.
-- hook_en: the scroll-stopping first line (max ~8 words).
-- caption_en: the full short caption (1-2 lines: the hook + the interactive question, with emojis).
-- caption_es: same ultra-short, hyped tone in neutral Latin-American Spanish ("tú", no voseo).
-- hashtags: 6-10, mixing high-volume / medium / niche, lowercase, each starting with '#'.
-- topic: a short, specific title (what the post is about).
-- visual_prompt: a vivid English prompt for the exact image/video (subject, angle, mood, light), \
-matched to the post type — aim for jaw-dropping, scroll-stopping visuals.
-
-Content pillars are pre-assigned — respect each one, in this tone: technical awe = one \
-jaw-dropping fact + a "guess / what do you think?" hook; spotting = pure eye-candy, one line \
-of feeling + an engagement ask; aviation story = a one-line teaser hook, not the full story; \
-pilot path = the aspirational dream of flying.
-
-CTA rule (STRICT): MOST posts have NO sales CTA — the account is being revived and \
-pushing sales breaks trust. Only add the Pilot Institute call-to-action when a post's \
-line explicitly says [INCLUDE the Pilot Institute CTA]; then weave it in naturally and \
-warmly (link in bio). Otherwise — INCLUDING on "pilot path" posts — you must NOT \
-mention Pilot Institute, courses, sign-ups, "link in bio", "check out", or any \
-enrollment nudge. A pilot-path post without the marker is purely aspirational and \
-emotional (the dream of flying), never a sales pitch.
-
-Across the month, don't repeat topics or aircraft. Return your answer by calling \
-submit_calendar exactly once, one entry per post id, nothing else."""
+VOICE_RULES = """Format & voice rules (apply to EVERY post):
+- ULTRA-short: 1-2 lines, ~10-25 words. Never a paragraph.
+- Lead with awe/feeling, not a lesson. If there's a fact, ONE punchy line.
+- Every post ENDS with an interactive hook that begs a comment (a guess, a this-or-that, or a direct "who else?"). Comments are the #1 goal.
+- Emojis welcome and natural (✈️ signature; 😍🔥👀😱 when they fit). Never a robotic row of identical emojis.
+- Vary the structure across posts — do NOT reuse the same closing formula post after post.
+- Ground every specific claim in the fact/news provided for that post. Invent nothing.
+- hook_en: scroll-stopping first line (max ~8 words). caption_en: the full short caption. caption_es: same tone in neutral Latin-American Spanish ("tú").
+- hashtags: 6-10, lowercase, each starting with '#'. topic: short specific title. visual_prompt: vivid English prompt matched to the post type.
+Return your answer by calling submit_calendar exactly once, one entry per post id, nothing else."""
 
 
 def build_user_prompt(skeleton: list[dict], month_label: str) -> str:
@@ -258,9 +224,18 @@ def build_user_prompt(skeleton: list[dict], month_label: str) -> str:
                         "Institute, courses, sign-ups, or 'link in bio']")
         else:
             cta_note = ""
+        kind = p.get("source_kind", "none")
+        if kind == "fact":
+            ground = (f"\n    Build this post around this REAL fact (do not invent beyond it): "
+                      f"{p['source_text']} — {p.get('source_detail','')}")
+        elif kind == "news":
+            ground = (f"\n    React in your own voice to this recent news (do not invent beyond it): "
+                      f"{p['source_text']} — {p.get('source_detail','')}")
+        else:
+            ground = "\n    No fact available: keep it purely emotional/observational, invent nothing."
         lines.append(
             f"- id={p['id']} | date={p['date']} | type={p['type']} | "
-            f"pillar={p['pillar']}{cta_note}\n    {brief}"
+            f"pillar={p['pillar']}{cta_note}\n    {brief}{ground}"
         )
     lines.append(
         "\nReturn every id via the submit_calendar tool. Keep topics unique "
@@ -314,7 +289,7 @@ CALENDAR_TOOL = {
 # 3. Llamada al modelo
 # ---------------------------------------------------------------------------
 
-def generate_creative(skeleton: list[dict], month_label: str, model: str) -> dict[str, dict]:
+def generate_creative(skeleton: list[dict], month_label: str, model: str, niche: str = "epic-plane") -> dict[str, dict]:
     """Llama a la API y devuelve un dict id -> campos creativos."""
     try:
         from anthropic import Anthropic
@@ -331,7 +306,8 @@ def generate_creative(skeleton: list[dict], month_label: str, model: str) -> dic
     except Exception as e:  # pragma: no cover - error de configuración
         sys.exit(f"No pude inicializar el cliente de Anthropic: {e}")
 
-    system = SYSTEM_PROMPT
+    import soul
+    system = soul.load_persona(niche) + "\n\n" + VOICE_RULES
     user = build_user_prompt(skeleton, month_label)
 
     print(f"→ Llamando a {model} para generar {len(skeleton)} posts…")
@@ -633,6 +609,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Epic.Plane — Generador de contenido (Módulo 1).")
     parser.add_argument("--month", help="Mes a generar en formato YYYY-MM (por defecto: mes actual).")
     parser.add_argument("--model", default=DEFAULT_MODEL, help=f"Modelo a usar (por defecto: {DEFAULT_MODEL}).")
+    parser.add_argument("--niche", default="epic-plane", help="Nicho/cliente: persona + base + noticias (por defecto: epic-plane).")
     parser.add_argument("--force", action="store_true", help="Regenera aunque el calendario del mes ya exista.")
     parser.add_argument(
         "--export-only",
@@ -729,7 +706,11 @@ def main() -> None:
 
     print(f"Generando calendario de {month_label} para Epic.Plane…")
     skeleton = build_schedule(year, month)
-    creative = generate_creative(skeleton, month_label, args.model)
+    import soul
+    skeleton = soul.assign_sources(
+        skeleton, soul.load_facts(args.niche), soul.load_news(args.niche)
+    )
+    creative = generate_creative(skeleton, month_label, args.model, args.niche)
     posts = merge(skeleton, creative)
 
     json_path = write_json(year, month, posts)
