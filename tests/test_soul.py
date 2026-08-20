@@ -65,3 +65,12 @@ def test_assign_sources_uses_fact_and_news():
     assert out[0]["source_text"] == "fast"
     assert out[2]["source_kind"] == "news"       # el 3er post es slot de reacción
     assert out[2]["source_text"] == "N1"
+
+
+def test_assign_sources_exhausted_facts_gives_none():
+    skeleton = [{"id": "P01", "pillar": "spotting"}, {"id": "P02", "pillar": "spotting"}]
+    facts = [{"id": "F1", "subject": "s", "fact": "only fact", "detail": "d", "pillar": "spotting"}]
+    out = soul.assign_sources(skeleton, facts, news=[], reaction_every=3)
+    assert out[0]["source_kind"] == "fact"
+    assert out[1]["source_kind"] == "none"
+    assert out[1]["source_text"] == ""

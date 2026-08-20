@@ -307,7 +307,11 @@ def generate_creative(skeleton: list[dict], month_label: str, model: str, niche:
         sys.exit(f"No pude inicializar el cliente de Anthropic: {e}")
 
     import soul
-    system = soul.load_persona(niche) + "\n\n" + VOICE_RULES
+    try:
+        persona = soul.load_persona(niche)
+    except FileNotFoundError as e:
+        sys.exit(str(e))
+    system = persona + "\n\n" + VOICE_RULES
     user = build_user_prompt(skeleton, month_label)
 
     print(f"→ Llamando a {model} para generar {len(skeleton)} posts…")
