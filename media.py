@@ -91,6 +91,56 @@ def derive_query(post: dict) -> str:
     return PILLAR_FALLBACK.get(post.get("pillar", ""), "airplane")
 
 
+# --- Curación de aviones específicos vía Wikimedia Commons ---------------------
+# Pexels casi nunca devuelve el avión EXACTO (trae "aviones bonitos genéricos").
+# Para estos modelos vamos directo a Commons y forzamos FOTO: una foto correcta
+# gana siempre a un reel/foto equivocada. Pexels queda para reels spotter y
+# conceptos genéricos (cabina, contrails, motor, etc.).
+WIKI_UA = "EpicPlaneBot/1.0 (felipecood@gmail.com; personal aviation IG project)"
+AIRCRAFT_WIKI = {
+    "sr-71": "Lockheed SR-71 Blackbird", "blackbird": "Lockheed SR-71 Blackbird",
+    "concorde": "Concorde airliner", "747": "Boeing 747 airline", "jumbo": "Boeing 747 airline",
+    "767": "Boeing 767 airline", "777": "Boeing 777 airline", "787": "Boeing 787 airline",
+    "dreamliner": "Boeing 787 airline", "a350": "Airbus A350", "a380": "Airbus A380",
+    "a220": "Airbus A220", "md-11": "McDonnell Douglas MD-11", "md11": "McDonnell Douglas MD-11",
+    "an-225": "Antonov An-225", "antonov": "Antonov An-124", "spitfire": "Supermarine Spitfire",
+    "f-22": "F-22 Raptor", "raptor": "F-22 Raptor", "f-35": "F-35 Lightning II",
+    "c-17": "Boeing C-17 Globemaster III", "globemaster": "Boeing C-17 Globemaster III",
+    "gimli": "Air Canada Boeing 767", "pan am": "Pan Am Boeing 747",
+    "typhoon": "Eurofighter Typhoon", "eurofighter": "Eurofighter Typhoon",
+    "ge90": "General Electric GE90 engine", "dc-3": "Douglas DC-3",
+}
+
+
+def derive_wiki(post: dict) -> str | None:
+    """Si el post trata de un avión específico, devuelve la búsqueda de Commons; si no, None."""
+    text = (post.get("topic", "") + " " + post.get("visual_prompt", "")).lower()
+    for k, v in AIRCRAFT_WIKI.items():
+        if k in text:
+            return v
+    return None
+
+
+def commons_photo(query: str, width: int = 1600) -> dict | None:
+    """Trae una foto JPEG correcta y nítida de Wikimedia Commons (URL pública)."""
+    url = ("https://commons.wikimedia.org/w/api.php?action=query&generator=search"
+           "&gsrsearch=" + urllib.parse.quote(query + " aircraft") +
+           "&gsrnamespace=6&gsrlimit=8&prop=imageinfo&iiprop=url|mime"
+           "&iiurlwidth=" + str(width) + "&format=json")
+    req = urllib.request.Request(url, headers={"User-Agent": WIKI_UA})
+    try:
+        data = json.load(urllib.request.urlopen(req, timeout=30))
+    except (urllib.error.HTTPError, urllib.error.URLError):
+        return None
+    pages = (data.get("query", {}).get("pages", {}) or {}).values()
+    for p in sorted(pages, key=lambda x: x.get("index", 999)):
+        ii = (p.get("imageinfo") or [{}])[0]
+        if ii.get("mime") == "image/jpeg" and ii.get("thumburl"):
+            asset = ii["thumburl"].split("?")[0]   # thumb nítido; sin el ?utm_source
+            return {"url": asset, "thumb": asset}
+    return None
+
+
 def _get(url: str, key: str) -> dict:
     req = urllib.request.Request(url, headers={"Authorization": key, "User-Agent": UA})
     try:
@@ -129,6 +179,14 @@ def search_video(query: str, key: str) -> dict | None:
 
 
 def media_for_post(post: dict, key: str, query: str) -> dict | None:
+    # 1) ¿Avión específico? -> foto curada de Commons (garantiza que corresponde).
+    wq = derive_wiki(post)
+    if wq:
+        ph = commons_photo(wq)
+        if ph:
+            return {"asset_path": ph["url"], "preview_url": ph["thumb"],
+                    "note": f"foto curada Wikimedia · {wq}", "force_type": "image"}
+        # si Commons no responde, cae a Pexels (mejor algo que nada).
     t = post.get("type")
     if t == "reel":
         vid = search_video(query, key)
@@ -177,7 +235,10 @@ def main() -> None:
             print(f"   ⚠️  {p['id']} [{p['type']}] sin resultados para '{query}'")
             continue
         print(f"   ✓ {p['id']} [{p['type']:8}] '{query}' → {m['note']}")
-        items.append({"id": p["id"], "asset_path": m["asset_path"], "preview_url": m["preview_url"]})
+        item = {"id": p["id"], "asset_path": m["asset_path"], "preview_url": m["preview_url"]}
+        if m.get("force_type"):
+            item["type"] = m["force_type"]
+        items.append(item)
 
     if args.dry_run:
         print(f"\n(DRY RUN) {len(items)} post(s) tendrían media. No se escribió en la hoja.")
@@ -191,6 +252,21 @@ def main() -> None:
     print(f"\n✓ {n_ok} post(s) con asset_path + enlace de preview escritos en la Google Sheet.")
     if missing:
         print(f"  (no encontré en la hoja: {', '.join(missing)} — ¿corriste --to-sheet?)")
+
+    # Escribir el tipo -> image para los posts de avión específico (foto curada).
+    forced = [(it["id"], it["type"]) for it in items if it.get("type")]
+    if forced:
+        from gspread.utils import rowcol_to_a1
+        _, ws = sheets.get_worksheet()
+        rows = ws.get_all_values()
+        col = rows[0].index("type")
+        idrow = {r[0]: i + 2 for i, r in enumerate(rows[1:])}
+        ws.batch_update(
+            [{"range": rowcol_to_a1(idrow[i], col + 1), "values": [[t]]}
+             for i, t in forced if i in idrow],
+            value_input_option="USER_ENTERED",
+        )
+        print(f"  ✓ tipo → foto en {len(forced)} post(s) de avión específico.")
     print("  En la hoja, la columna 'preview' tiene un enlace 'ver foto': tócalo para ver la imagen.")
 
 
