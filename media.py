@@ -141,6 +141,13 @@ def commons_photo(query: str, width: int = 1600) -> dict | None:
     return None
 
 
+def crop_45(url: str) -> str:
+    """Recorta la foto a 4:5 (1080x1350) con enfoque inteligente, vía weserv.nl
+    (CDN gratis, sin cuenta). 4:5 es el formato de foto que más ocupa el feed de IG."""
+    return ("https://images.weserv.nl/?url=" + urllib.parse.quote(url, safe="") +
+            "&w=1080&h=1350&fit=cover&a=attention&output=jpg")
+
+
 def _get(url: str, key: str) -> dict:
     req = urllib.request.Request(url, headers={"Authorization": key, "User-Agent": UA})
     try:
@@ -184,8 +191,9 @@ def media_for_post(post: dict, key: str, query: str) -> dict | None:
     if wq:
         ph = commons_photo(wq)
         if ph:
-            return {"asset_path": ph["url"], "preview_url": ph["thumb"],
-                    "note": f"foto curada Wikimedia · {wq}", "force_type": "image"}
+            a = crop_45(ph["url"])
+            return {"asset_path": a, "preview_url": a,
+                    "note": f"foto curada Wikimedia 4:5 · {wq}", "force_type": "image"}
         # si Commons no responde, cae a Pexels (mejor algo que nada).
     t = post.get("type")
     if t == "reel":
@@ -197,10 +205,10 @@ def media_for_post(post: dict, key: str, query: str) -> dict | None:
     photos = search_photos(query, key, n)
     if not photos:
         return None
-    asset = ",".join(p["large"] for p in photos)
+    asset = ",".join(crop_45(p["large"]) for p in photos)
     warn = "" if photos[0].get("aviation") else "  ⚠ revisar (no confirmé aviación)"
-    return {"asset_path": asset, "preview_url": photos[0]["medium"],
-            "note": f"{len(photos)} foto(s) · {photos[0]['by']}{warn}"}
+    return {"asset_path": asset, "preview_url": crop_45(photos[0]["medium"]),
+            "note": f"{len(photos)} foto(s) 4:5 · {photos[0]['by']}{warn}"}
 
 
 def main() -> None:

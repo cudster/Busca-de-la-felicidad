@@ -12,3 +12,11 @@ def test_derive_wiki_generic_returns_none():
     assert media.derive_wiki({"topic": "Premium Economy Hidden Perks", "visual_prompt": "cabin"}) is None
     assert media.derive_wiki({"topic": "Contrails clouds", "visual_prompt": "sky"}) is None
     assert media.derive_wiki({"topic": "Ground Effect cushion", "visual_prompt": "landing"}) is None
+
+
+def test_crop_45_wraps_weserv():
+    import urllib.parse
+    out = media.crop_45("https://upload.wikimedia.org/x/y/z.jpg")
+    assert out.startswith("https://images.weserv.nl/?url=")
+    assert "w=1080" in out and "h=1350" in out
+    assert "z.jpg" in urllib.parse.unquote(out)
