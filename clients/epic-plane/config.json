@@ -1,0 +1,13 @@
+{
+  "slug": "epic-plane",
+  "name": "Epic.Plane",
+  "niche": "aviación",
+  "channels": {
+    "instagram": { "enabled": true, "handle": "epic.plane", "ig_user_id_env": "IG_USER_ID", "token_env": "META_PAGE_TOKEN" },
+    "youtube":  { "enabled": false },
+    "linkedin": { "enabled": false },
+    "tiktok":   { "enabled": false }
+  },
+  "goals": { "primary": "reactivar alcance y engagement" },
+  "budget_notes": "sin pauta por ahora"
+}
