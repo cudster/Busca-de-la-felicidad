@@ -75,3 +75,37 @@ def instagram_snapshot(ch: dict, env: dict) -> dict | None:
     top = max(posts[:7], key=lambda p: p.get("like", 0), default=None) if posts else None
     return {"followers": followers, "cur": s["cur"], "prev": s["prev"],
             "reach_trend_pct": s["reach_trend_pct"], "top": top}
+
+
+def _tf(v) -> bool:
+    return str(v).strip().upper() in ("TRUE", "1")
+
+
+def content_status(rows: list[list], header: list, month_prefix: str = "") -> dict:
+    idx = {h: i for i, h in enumerate(header)}
+    def g(r, k, d=""):
+        i = idx.get(k)
+        return r[i] if (i is not None and i < len(r)) else d
+    pend = pub_week = 0
+    proximo = None
+    today = dt.date.today().isoformat()
+    for r in rows:
+        if not g(r, "id"):
+            continue
+        appr, publ, date = _tf(g(r, "approved")), _tf(g(r, "published")), g(r, "date")
+        if appr and not publ:
+            if proximo is None or (date and date < proximo):
+                proximo = date
+        if not appr and not publ and date >= today:
+            pend += 1
+    return {"pendientes": pend, "publicados_semana": pub_week, "proximo": proximo}
+
+
+def sheet_content(slug: str) -> dict:
+    try:
+        import sheets
+        _, ws = sheets.get_worksheet()
+        rows = ws.get_all_values()
+        return content_status(rows[1:], rows[0])
+    except Exception:
+        return {}

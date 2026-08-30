@@ -31,3 +31,16 @@ def test_summarize_period_splits_and_trend():
     assert s["cur"]["reach"] == 1500
     assert s["prev"]["n"] == 1
     assert s["reach_trend_pct"] == 200  # (1500-500)/500*100
+
+
+def test_content_status_counts():
+    header = ["id", "date", "time_utc", "type", "approved", "published"]
+    rows = [
+        header,
+        ["2026-09-P01", "2026-09-01", "22:00", "reel", "TRUE", "TRUE"],
+        ["2026-09-P02", "2026-09-02", "22:00", "reel", "FALSE", "FALSE"],
+        ["2026-09-P03", "2026-09-03", "22:00", "image", "TRUE", "FALSE"],
+    ]
+    st = dashboard.content_status(rows[1:], header, "2026-09")
+    assert st["pendientes"] == 1          # P02 sin aprobar
+    assert st["proximo"] == "2026-09-03"  # próximo aprobado sin publicar
