@@ -1,0 +1,10 @@
+{
+  "channel": "autos-pov",
+  "name": "Autos POV (faceless, lujo)",
+  "language": "es",
+  "niche": "autos de lujo, experiencias POV, faceless",
+  "videos_per_month": 12,
+  "mix": { "short": 8, "long": 4 },
+  "cta_lines": ["Suscríbete si amas los autos de lujo", "Dale like y activa la campana para no perderte ninguno"],
+  "reference_style": "narración inmersiva en primera persona, ritmo ágil, datos que sorprenden, cero relleno"
+}
