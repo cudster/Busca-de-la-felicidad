@@ -1,0 +1,29 @@
+name: CEO Dashboard (semanal)
+
+# Regenera el dashboard cada lunes 12:00 UTC (≈ 8am Chile) + manual.
+on:
+  schedule:
+    - cron: "0 12 * * 1"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install gspread google-auth
+      - name: Generar dashboard.html
+        env:
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          META_PAGE_TOKEN: ${{ secrets.META_PAGE_TOKEN }}
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          SHEET_ID: ${{ secrets.SHEET_ID }}
+        run: python dashboard.py
+      - name: Publicar como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: dashboard
+          path: dashboard.html
