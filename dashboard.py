@@ -127,7 +127,9 @@ def build_decisions(cfg: dict, snap: dict | None, content: dict) -> dict:
     # 1. Contenido
     pend = content.get("pendientes", 0)
     prox = content.get("proximo")
-    if pend:
+    if not content:
+        contenido = "Estado de contenido no disponible (revisar conexión a la hoja)."
+    elif pend:
         contenido = f"⚠️ {pend} post(s) sin aprobar. Revísalos para no perder días."
     elif prox:
         contenido = f"Al día. Próximo publica el {prox}."
@@ -136,6 +138,8 @@ def build_decisions(cfg: dict, snap: dict | None, content: dict) -> dict:
     # 2. Estrategia por canal
     if not snap or not snap.get("cur"):
         estrategia = "Sin datos de IG (falta permiso o publicaciones)."
+    elif snap.get("reach_trend_pct", 0) < -10:
+        estrategia = "Alcance BAJANDO → cambio urgente: todo a reels + audio en tendencia + stories diarias."
     elif snap["cur"].get("comments", 0) == 0 and abs(snap.get("reach_trend_pct", 0)) <= 10:
         estrategia = "Alcance plano y 0 comentarios → prioriza reels + audio en tendencia y ganchos más directos."
     elif snap.get("reach_trend_pct", 0) > 10:

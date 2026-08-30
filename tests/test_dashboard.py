@@ -78,3 +78,17 @@ def test_render_html_contains_client_and_decisions():
     assert "Prioriza reels." in html
     assert "78" in html  # followers formateados
     assert "próximamente" in html.lower()  # canales no habilitados
+
+
+def test_build_decisions_declining_reach_alerts():
+    d = dashboard.build_decisions(
+        {"name": "X"},
+        {"cur": {"comments": 0, "reach": 600}, "reach_trend_pct": -18, "followers": 78000},
+        {"pendientes": 0, "proximo": None},
+    )
+    assert "BAJANDO" in d["estrategia"]
+
+
+def test_build_decisions_no_content_says_unavailable():
+    d = dashboard.build_decisions({"name": "X"}, None, {})
+    assert "no disponible" in d["contenido"].lower()
