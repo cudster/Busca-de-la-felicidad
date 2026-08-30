@@ -61,3 +61,20 @@ def test_build_decisions_has_four_sections():
     )
     assert set(d) == {"contenido", "estrategia", "presupuesto", "cliente"}
     assert "2" in d["contenido"]  # menciona los 2 pendientes
+
+
+def test_render_html_contains_client_and_decisions():
+    data = [{
+        "cfg": {"name": "Epic.Plane", "channels": {"instagram": {"enabled": True, "handle": "epic.plane"},
+                 "youtube": {"enabled": False}, "linkedin": {"enabled": False}, "tiktok": {"enabled": False}}},
+        "snap": {"followers": 78000, "cur": {"reach": 650, "likes": 9, "comments": 0}, "reach_trend_pct": 1, "top": None},
+        "content": {"pendientes": 0, "proximo": "2026-09-03"},
+        "health": "yellow",
+        "decisions": {"contenido": "Al día.", "estrategia": "Prioriza reels.",
+                      "presupuesto": "Sin acción.", "cliente": "Epic.Plane: estable."},
+    }]
+    html = dashboard.render_html(data)
+    assert "Epic.Plane" in html
+    assert "Prioriza reels." in html
+    assert "78" in html  # followers formateados
+    assert "próximamente" in html.lower()  # canales no habilitados
