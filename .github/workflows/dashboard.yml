@@ -15,13 +15,16 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install gspread google-auth
-      - name: Generar dashboard.html
+      - name: Generar y enviar el dashboard al CEO
         env:
           IG_USER_ID: ${{ secrets.IG_USER_ID }}
           META_PAGE_TOKEN: ${{ secrets.META_PAGE_TOKEN }}
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
           SHEET_ID: ${{ secrets.SHEET_ID }}
-        run: python dashboard.py
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          EMAIL_TO: felipecood@gmail.com
+        run: python dashboard.py --email
       - name: Publicar como artefacto
         uses: actions/upload-artifact@v4
         with:

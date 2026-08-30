@@ -3,10 +3,14 @@ calcula salud y decisiones, y genera dashboard.html estático."""
 
 from __future__ import annotations
 
+import argparse
 import datetime as dt
 import json
+import smtplib
+import ssl
 import urllib.parse
 import urllib.request
+from email.mime.text import MIMEText
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -248,11 +252,35 @@ def _load_env() -> dict:
                 k, _, v = l.partition("=")
                 e[k.strip()] = v.strip().strip('"').strip("'")
     import os
-    e.update({k: os.environ[k] for k in ("IG_USER_ID", "META_PAGE_TOKEN") if os.environ.get(k)})
+    e.update({k: os.environ[k] for k in
+              ("IG_USER_ID", "META_PAGE_TOKEN", "GMAIL_USER", "GMAIL_APP_PASSWORD", "EMAIL_TO")
+              if os.environ.get(k)})
     return e
 
 
+def send_dashboard_email(html: str, env: dict) -> None:
+    """Envía el dashboard (HTML) al CEO por Gmail SMTP. Entrega privada, sin hosting."""
+    user = env.get("GMAIL_USER")
+    pw = env.get("GMAIL_APP_PASSWORD")
+    to = env.get("EMAIL_TO", "felipecood@gmail.com")
+    if not user or not pw:
+        print("  (sin GMAIL_USER/GMAIL_APP_PASSWORD → no se envió el correo)")
+        return
+    msg = MIMEText(html, "html", "utf-8")
+    msg["Subject"] = "CEO Dashboard — " + dt.datetime.now().strftime("%d/%m/%Y")
+    msg["From"] = user
+    msg["To"] = to
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=ssl.create_default_context()) as s:
+        s.login(user, pw)
+        s.sendmail(user, [to], msg.as_string())
+    print(f"✓ Dashboard enviado por correo a {to}")
+
+
 def main() -> None:
+    ap = argparse.ArgumentParser(description="CEO Dashboard — genera dashboard.html (y opcional lo envía por correo).")
+    ap.add_argument("--email", action="store_true", help="Además, envía el dashboard al CEO por Gmail.")
+    args = ap.parse_args()
+
     env = _load_env()
     data = []
     for cfg in load_clients():
@@ -262,8 +290,11 @@ def main() -> None:
         data.append({"cfg": cfg, "snap": snap, "content": content,
                      "health": compute_health(snap),
                      "decisions": build_decisions(cfg, snap, content)})
-    (ROOT / "dashboard.html").write_text(render_html(data), encoding="utf-8")
+    html = render_html(data)
+    (ROOT / "dashboard.html").write_text(html, encoding="utf-8")
     print(f"✓ dashboard.html generado ({len(data)} cliente(s)).")
+    if args.email:
+        send_dashboard_email(html, env)
 
 
 if __name__ == "__main__":
