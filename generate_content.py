@@ -71,27 +71,27 @@ TIME_EVENING_UTC = "22:00"
 #   aviation_story = 4 (20%)  -> historias de aviación
 #   pilot_path     = 2 (10%)  -> camino del piloto (aquí va el CTA de afiliado)
 PILLAR_PATTERN = [
-    "spotting",       # 1   (post-métricas: spotting/visual épico es el pilar más fuerte)
-    "technical_awe",  # 2
-    "spotting",       # 3
-    "aviation_story", # 4
-    "pilot_path",     # 5
-    "spotting",       # 6
-    "technical_awe",  # 7
+    "spotting",       # 1
+    "spotting",       # 2
+    "technical_awe",  # 3
+    "spotting",       # 4
+    "spotting",       # 5
+    "aviation_story", # 6
+    "spotting",       # 7
     "spotting",       # 8
-    "aviation_story", # 9
-    "technical_awe",  # 10
+    "technical_awe",  # 9
+    "spotting",       # 10
     "spotting",       # 11
-    "technical_awe",  # 12
+    "pilot_path",     # 12
     "spotting",       # 13
-    "pilot_path",     # 14
-    "spotting",       # 15
-    "technical_awe",  # 16
-    "aviation_story", # 17
+    "spotting",       # 14
+    "technical_awe",  # 15
+    "aviation_story", # 16
+    "spotting",       # 17
     "spotting",       # 18
     "technical_awe",  # 19
-    "aviation_story", # 20
-]  # spotting=8, technical_awe=6, aviation_story=4, pilot_path=2
+    "pilot_path",     # 20
+]  # spotting=12, technical_awe=4, aviation_story=2, pilot_path=2 (post-métricas: visual épico corto)
 
 # Descripción de cada pilar para el prompt del modelo.
 PILLAR_BRIEFS = {
@@ -116,17 +116,13 @@ PILLAR_BRIEFS = {
 
 # Tipo de post por pilar (rotación determinística para dar variedad).
 def _post_type(pillar: str, pillar_seq_index: int) -> str:
-    # Post-métricas: priorizar REELS (más alcance) y visual épico; minimizar
-    # carruseles educativos (los que menos rendían).
-    if pillar == "spotting":
-        return "reel" if pillar_seq_index % 2 == 0 else "image"
+    # Estrategia post-métricas (2026-08-30): el alcance está clavado <1% en una
+    # cuenta dormida. Los REELS son el único formato que llega a NO-seguidores
+    # (Explore/Reels), y con audio en tendencia (que agrega el dueño) se potencian.
+    # Casi todo va como reel; solo una imagen ocasional en technical_awe para variar.
     if pillar == "technical_awe":
-        return "reel" if pillar_seq_index % 2 == 0 else "image"
-    if pillar == "aviation_story":
-        return "carousel" if pillar_seq_index % 2 == 0 else "reel"
-    if pillar == "pilot_path":
-        return "reel"
-    return "image"
+        return "image" if pillar_seq_index % 3 == 0 else "reel"
+    return "reel"
 
 
 def _extension_for_type(post_type: str) -> str:
@@ -226,13 +222,14 @@ def build_user_prompt(skeleton: list[dict], month_label: str) -> str:
             cta_note = ""
         kind = p.get("source_kind", "none")
         if kind == "fact":
-            ground = (f"\n    Build this post around this REAL fact (do not invent beyond it): "
-                      f"{p['source_text']} — {p.get('source_detail','')}")
+            ground = (f"\n    Optional flavor — ONLY if it fits in one short line, never invent beyond it: "
+                      f"{p['source_text']}. But LEAD with a scroll-stopping hook and END with the comment question. "
+                      f"Do NOT open with the fact or a lesson. Ultra-short.")
         elif kind == "news":
-            ground = (f"\n    React in your own voice to this recent news (do not invent beyond it): "
-                      f"{p['source_text']} — {p.get('source_detail','')}")
+            ground = (f"\n    React in one short optional line to: {p['source_text']} — {p.get('source_detail','')}. "
+                      f"Lead with the hook, end with the comment question, ultra-short.")
         else:
-            ground = "\n    No fact available: keep it purely emotional/observational, invent nothing."
+            ground = "\n    Pure hook + feeling + comment question. Ultra-short. Invent no facts."
         lines.append(
             f"- id={p['id']} | date={p['date']} | type={p['type']} | "
             f"pillar={p['pillar']}{cta_note}\n    {brief}{ground}"
