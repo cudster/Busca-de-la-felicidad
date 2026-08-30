@@ -109,3 +109,52 @@ def sheet_content(slug: str) -> dict:
         return content_status(rows[1:], rows[0])
     except Exception:
         return {}
+
+
+def compute_health(snap: dict | None) -> str:
+    if not snap or not snap.get("cur"):
+        return "gray"
+    t = snap.get("reach_trend_pct", 0)
+    coms = snap["cur"].get("comments", 0)
+    if t > 10 and coms > 0:
+        return "green"
+    if t < -10:
+        return "red"
+    return "yellow"
+
+
+def build_decisions(cfg: dict, snap: dict | None, content: dict) -> dict:
+    # 1. Contenido
+    pend = content.get("pendientes", 0)
+    prox = content.get("proximo")
+    if pend:
+        contenido = f"⚠️ {pend} post(s) sin aprobar. Revísalos para no perder días."
+    elif prox:
+        contenido = f"Al día. Próximo publica el {prox}."
+    else:
+        contenido = "Sin contenido en cola — hay que generar el próximo lote."
+    # 2. Estrategia por canal
+    if not snap or not snap.get("cur"):
+        estrategia = "Sin datos de IG (falta permiso o publicaciones)."
+    elif snap["cur"].get("comments", 0) == 0 and abs(snap.get("reach_trend_pct", 0)) <= 10:
+        estrategia = "Alcance plano y 0 comentarios → prioriza reels + audio en tendencia y ganchos más directos."
+    elif snap.get("reach_trend_pct", 0) > 10:
+        estrategia = "Alcance subiendo → seguir con este estilo y aumentar frecuencia."
+    else:
+        estrategia = "Mantener el ritmo; medir otra semana antes de cambiar."
+    # 3. Presupuesto
+    top = (snap or {}).get("top")
+    cur = (snap or {}).get("cur") or {}
+    if top and cur.get("likes") and top.get("like", 0) > 2 * cur["likes"]:
+        presupuesto = "Un post rindió muy por sobre el promedio → candidato a boost pagado chico."
+    else:
+        presupuesto = "Sin acción de pauta esta semana."
+    # 4. Cliente
+    health = compute_health(snap)
+    nota = {"green": "🟢 Sano — va mejorando.",
+            "yellow": "🟡 Estable/plano — vigilar.",
+            "red": "🔴 En riesgo — conversar rumbo.",
+            "gray": "⚪ Sin datos aún."}[health]
+    cliente = f"{cfg.get('name','')}: {nota}"
+    return {"contenido": contenido, "estrategia": estrategia,
+            "presupuesto": presupuesto, "cliente": cliente}

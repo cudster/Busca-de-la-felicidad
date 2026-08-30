@@ -44,3 +44,20 @@ def test_content_status_counts():
     st = dashboard.content_status(rows[1:], header, "2026-09")
     assert st["pendientes"] == 1          # P02 sin aprobar
     assert st["proximo"] == "2026-09-03"  # próximo aprobado sin publicar
+
+
+def test_compute_health():
+    assert dashboard.compute_health(None) == "gray"
+    assert dashboard.compute_health({"cur": {"comments": 3}, "reach_trend_pct": 25}) == "green"
+    assert dashboard.compute_health({"cur": {"comments": 0}, "reach_trend_pct": -30}) == "red"
+    assert dashboard.compute_health({"cur": {"comments": 0}, "reach_trend_pct": 2}) == "yellow"
+
+
+def test_build_decisions_has_four_sections():
+    d = dashboard.build_decisions(
+        {"name": "Demo"},
+        {"cur": {"comments": 0, "reach": 600}, "reach_trend_pct": 2, "followers": 78000},
+        {"pendientes": 2, "proximo": "2026-09-03"},
+    )
+    assert set(d) == {"contenido", "estrategia", "presupuesto", "cliente"}
+    assert "2" in d["contenido"]  # menciona los 2 pendientes
