@@ -26,7 +26,14 @@ ROOT = Path(__file__).resolve().parent
 OUT_DIR = ROOT / "videos"
 UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
 DEFAULT_VOICE = "onwK4e9ZLuTAKqWW03F9"  # ElevenLabs multilingüe (config puede override)
-CAR_QUERIES = ["luxury sports car", "supercar driving", "luxury car interior", "sports car road"]
+# POV manejando: se ordena para armar un mini-arco → prender → manejar lento → acelerar.
+CAR_QUERIES = [
+    "car ignition start button push",
+    "car interior driving pov",
+    "hands on steering wheel driving",
+    "driving pov road first person",
+    "fast car acceleration highway",
+]
 
 
 def _env() -> dict:
