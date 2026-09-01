@@ -11,6 +11,8 @@ import ssl
 import urllib.parse
 import urllib.request
 from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.application import MIMEApplication
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -208,39 +210,159 @@ def _client_card(d: dict) -> str:
             f"<div class='decs'><h3>Decisiones de la semana</h3>{decs}</div></section>")
 
 
-def render_html(clients_data: list[dict]) -> str:
-    pend_total = sum(c.get("content", {}).get("pendientes", 0) for c in clients_data)
-    chips = "".join(
-        f"<span class='oc'>{_HEALTH[c['health']][0]} {c['cfg'].get('name','')}</span>"
-        for c in clients_data)
-    cards = "".join(_client_card(c) for c in clients_data)
-    updated = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-    return f"""<!doctype html><html lang="es"><head><meta charset="utf-8">
+_HEALTH_HEX = {"green": "#3FB07A", "yellow": "#E9A73C", "red": "#E9553D", "gray": "#7C6E60"}
+
+_TEMPLATE = r"""<!doctype html><html lang="es"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CEO Dashboard</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
 <style>
-:root{{--bg:#140F0C;--card:#1B1410;--ink:#F4ECE3;--soft:#AC9C8D;--line:rgba(255,255,255,.09);--tomato:#E9553D;}}
-*{{box-sizing:border-box;}} body{{margin:0;background:var(--bg);color:var(--ink);font-family:'Plus Jakarta Sans',system-ui,sans-serif;}}
-.wrap{{max-width:1000px;margin:0 auto;padding:28px 20px 60px;}}
-h1{{font-size:26px;margin:0 0 4px;}} .sub{{color:var(--soft);font-size:14px;margin-bottom:20px;}}
-.overview{{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:8px;}}
-.oc{{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:8px 14px;font-weight:700;font-size:14px;}}
-.pend{{color:var(--tomato);font-weight:800;font-size:14px;margin:8px 0 24px;}}
-.card{{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px;margin-bottom:18px;}}
-.chd{{display:flex;justify-content:space-between;align-items:center;}} .chd h2{{margin:0;font-size:22px;}} .badge{{font-size:20px;}}
-.chans{{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:16px 0;}}
-.chan{{border:1px solid var(--line);border-radius:12px;padding:12px 14px;}} .chan b{{font-size:14px;}} .chan span{{display:block;color:var(--soft);font-size:12.5px;margin-top:4px;}}
-.chan.off{{opacity:.5;}}
-.decs h3{{font-size:14px;text-transform:uppercase;letter-spacing:.1em;color:var(--tomato);margin:8px 0 12px;}}
-.dec{{border-top:1px solid var(--line);padding:11px 0;}} .dl{{font-size:12px;font-weight:800;color:var(--soft);text-transform:uppercase;letter-spacing:.06em;}}
-.dec p{{margin:5px 0 0;font-size:15px;line-height:1.5;}}
-</style></head><body><div class="wrap">
-<h1>CEO Dashboard</h1><p class="sub">Actualizado {updated} · {len(clients_data)} cliente(s)</p>
-<div class="overview">{chips}</div>
-<p class="pend">{pend_total} decisión(es) de contenido pendientes en total</p>
-{cards}
-</div></body></html>"""
+:root{--bg:#120E0B;--panel:#1B1510;--card:#211A14;--ink:#F4ECE3;--soft:#AC9C8D;--faint:#7C6E60;--line:rgba(255,255,255,.09);}
+*{box-sizing:border-box;} body{margin:0;background:var(--bg);color:var(--ink);font-family:'Plus Jakarta Sans',system-ui,sans-serif;}
+.wrap{max-width:1080px;margin:0 auto;padding:26px 20px 70px;}
+h1{font-size:24px;margin:0;} .sub{color:var(--soft);font-size:13px;margin:4px 0 20px;}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:26px;}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;}
+.kpi .l{color:var(--soft);font-size:12px;} .kpi .v{font-size:22px;font-weight:800;margin-top:3px;}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:16px;}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;cursor:pointer;transition:transform .15s,border-color .15s;}
+.tile:hover{transform:translateY(-3px);border-color:rgba(255,255,255,.28);}
+.tile .top{height:10px;} .tile .body{padding:18px 18px 20px;}
+.tile h2{margin:0;font-size:20px;} .tile .niche{color:var(--soft);font-size:12px;margin:2px 0 14px;}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-left:8px;vertical-align:middle;}
+.tk{display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-top:1px solid var(--line);}
+.tk .kv{color:var(--soft);} .tk .vv{font-weight:700;}
+.marg-pos{color:#5FBF8A;} .marg-neg{color:#E9553D;}
+.back{background:none;border:1px solid var(--line);color:var(--soft);border-radius:999px;padding:8px 16px;cursor:pointer;font-family:inherit;font-size:14px;margin-bottom:16px;}
+.back:hover{color:var(--ink);}
+.dhead{display:flex;align-items:center;gap:12px;margin-bottom:2px;} .dhead h1{font-size:28px;}
+.secs{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:18px;}
+@media(max-width:720px){.secs{grid-template-columns:1fr;}}
+.sec{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 20px;}
+.sec h3{margin:0 0 10px;font-size:13px;text-transform:uppercase;letter-spacing:.12em;}
+.row{display:flex;justify-content:space-between;gap:14px;font-size:14px;padding:9px 0;border-top:1px solid var(--line);}
+.row:first-of-type{border-top:none;} .row .k{color:var(--soft);} .row .v{font-weight:700;text-align:right;}
+.dec{padding:10px 0;border-top:1px solid var(--line);} .dec:first-child{border-top:none;}
+.dec .dl{font-size:11px;font-weight:800;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;}
+.dec p{margin:4px 0 0;font-size:14px;line-height:1.5;}
+.hidden{display:none;}
+</style></head><body>
+<div class="wrap">
+ <div id="home">
+  <h1>CEO Dashboard <span style="color:var(--faint);font-weight:600;font-size:15px;">· Al Día</span></h1>
+  <p class="sub">Actualizado __UPDATED__ · haz clic en una marca para ver su cuadro de mando</p>
+  <div class="kpis" id="kpis"></div>
+  <div class="grid" id="grid"></div>
+ </div>
+ <div id="detail" class="hidden"></div>
+ <noscript><div style="color:#AC9C8D">__FALLBACK__</div></noscript>
+</div>
+<script>
+var DATA = __DATA__;
+function clp(n){return "$" + (n||0).toLocaleString("es-CL");}
+function money(n){return (n||0).toLocaleString("es-CL");}
+function arrow(t){return t>10?("↑"+t+"%"):(t<-10?("↓"+t+"%"):("→"+t+"%"));}
+function kpi(l,v){return "<div class='kpi'><div class='l'>"+l+"</div><div class='v'>"+v+"</div></div>";}
+function homeKPIs(){
+  var rev=0,cost=0,pend=0;
+  DATA.forEach(function(b){rev+=b.finances.revenue;cost+=b.finances.cost;pend+=b.pendientes;});
+  document.getElementById("kpis").innerHTML =
+   kpi("Marcas",DATA.length)+kpi("Ingresos / mes",clp(rev))+kpi("Margen / mes",clp(rev-cost))+kpi("Decisiones pendientes",pend);
+}
+function grid(){
+  var g=document.getElementById("grid"); g.innerHTML="";
+  DATA.forEach(function(b,i){
+    var m=b.finances.margin;
+    var ig=b.channels.filter(function(c){return c.name=="Instagram";})[0];
+    var foll=b.followers?(money(b.followers)+" seg"):"por conectar";
+    var reach=(ig&&ig.state=="data")?(" · alcance "+money(ig.reach)+" "+arrow(ig.trend)):"";
+    var el=document.createElement("div"); el.className="tile";
+    el.innerHTML="<div class='top' style='background:"+b.color+"'></div><div class='body'>"+
+      "<h2>"+b.name+"<span class='dot' style='background:"+b.healthColor+"'></span></h2>"+
+      "<div class='niche'>"+foll+reach+"</div>"+
+      "<div class='tk'><span class='kv'>Ingresos</span><span class='vv'>"+clp(b.finances.revenue)+"</span></div>"+
+      "<div class='tk'><span class='kv'>Margen</span><span class='vv "+(m>=0?'marg-pos':'marg-neg')+"'>"+clp(m)+"</span></div>"+
+      "<div class='tk'><span class='kv'>Pendientes</span><span class='vv'>"+b.pendientes+"</span></div></div>";
+    el.onclick=(function(k){return function(){showDetail(k);};})(i);
+    g.appendChild(el);
+  });
+}
+function chanRows(b){
+  return b.channels.map(function(c){
+    var v;
+    if(c.state=="data"){v=money(c.followers)+" seg · alcance "+money(c.reach)+" "+arrow(c.trend)+" · "+c.likes+"♥ "+c.comments+"💬";}
+    else if(c.state=="on"){v="habilitado (por conectar datos)";}
+    else{v="próximamente";}
+    return "<div class='row'><span class='k'>"+c.name+"</span><span class='v'>"+v+"</span></div>";
+  }).join("");
+}
+function showDetail(i){
+  var b=DATA[i],f=b.finances,d=document.getElementById("detail");
+  d.innerHTML="<button class='back' onclick='showHome()'>← Todas las marcas</button>"+
+   "<div class='dhead'><span style='width:16px;height:16px;border-radius:5px;background:"+b.color+"'></span>"+
+   "<h1>"+b.name+"</h1><span class='dot' style='background:"+b.healthColor+"'></span></div>"+
+   "<div class='secs'>"+
+     "<div class='sec'><h3 style='color:"+b.color+"'>RRSS</h3>"+chanRows(b)+"</div>"+
+     "<div class='sec'><h3 style='color:"+b.color+"'>Ingresos y costos</h3>"+
+       "<div class='row'><span class='k'>Ingresos / mes</span><span class='v'>"+clp(f.revenue)+"</span></div>"+
+       "<div class='row'><span class='k'>Costos / mes</span><span class='v'>"+clp(f.cost)+"</span></div>"+
+       "<div class='row'><span class='k'>Margen / mes</span><span class='v "+(f.margin>=0?'marg-pos':'marg-neg')+"'>"+clp(f.margin)+"</span></div>"+
+       (f.note?"<div class='niche' style='margin-top:8px'>"+f.note+"</div>":"")+"</div>"+
+     "<div class='sec' style='grid-column:1/-1'><h3 style='color:"+b.color+"'>Decisiones de la semana</h3>"+
+       b.decisions.map(function(x){return "<div class='dec'><span class='dl'>"+x[0]+"</span><p>"+x[1]+"</p></div>";}).join("")+"</div>"+
+   "</div>";
+  document.getElementById("home").classList.add("hidden"); d.classList.remove("hidden"); window.scrollTo(0,0);
+}
+function showHome(){document.getElementById("detail").classList.add("hidden");document.getElementById("home").classList.remove("hidden");}
+homeKPIs(); grid();
+</script></body></html>"""
+
+
+def render_html(clients_data: list[dict]) -> str:
+    payload = []
+    for c in clients_data:
+        cfg = c["cfg"]; snap = c.get("snap"); dec = c.get("decisions", {}) or {}
+        fin = cfg.get("finances", {}) or {}
+        rev = fin.get("monthly_revenue", 0) or 0
+        cost = fin.get("monthly_costs", 0) or 0
+        chans = []
+        for key, label in _CH_LABEL.items():
+            ch = cfg.get("channels", {}).get(key, {})
+            if key == "instagram" and ch.get("enabled") and snap:
+                chans.append({"name": label, "state": "data",
+                              "followers": snap.get("followers", 0),
+                              "reach": snap["cur"].get("reach", 0),
+                              "trend": snap.get("reach_trend_pct", 0),
+                              "likes": snap["cur"].get("likes", 0),
+                              "comments": snap["cur"].get("comments", 0)})
+            elif ch.get("enabled"):
+                chans.append({"name": label, "state": "on"})
+            else:
+                chans.append({"name": label, "state": "off"})
+        payload.append({
+            "slug": cfg.get("slug", ""), "name": cfg.get("name", ""),
+            "color": cfg.get("brand_color", "#E9553D"),
+            "healthColor": _HEALTH_HEX.get(c.get("health", "gray"), "#7C6E60"),
+            "followers": (snap or {}).get("followers", 0),
+            "channels": chans,
+            "decisions": [["Contenido", dec.get("contenido", "")],
+                          ["Estrategia por canal", dec.get("estrategia", "")],
+                          ["Presupuesto", dec.get("presupuesto", "")],
+                          ["Cliente", dec.get("cliente", "")]],
+            "finances": {"revenue": rev, "cost": cost, "margin": rev - cost, "note": fin.get("note", "")},
+            "pendientes": (c.get("content") or {}).get("pendientes", 0),
+        })
+    data_json = json.dumps(payload, ensure_ascii=False)
+    updated = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    fb = []
+    for p in payload:
+        fb.append("<b>" + p["name"] + "</b> (" + p.get("healthColor", "") + ")")
+        for lbl, tx in p["decisions"]:
+            fb.append(lbl + ": " + tx)
+        fb.append("Seguidores: " + str(p["followers"]) + " · canales sin conectar: próximamente")
+    fallback = " — ".join(fb)
+    return (_TEMPLATE.replace("__DATA__", data_json)
+            .replace("__UPDATED__", updated).replace("__FALLBACK__", fallback))
 
 
 def _load_env() -> dict:
@@ -258,18 +380,28 @@ def _load_env() -> dict:
     return e
 
 
-def send_dashboard_email(html: str, env: dict) -> None:
-    """Envía el dashboard (HTML) al CEO por Gmail SMTP. Entrega privada, sin hosting."""
+def send_dashboard_email(html_path: Path, env: dict) -> None:
+    """Envía el dashboard al CEO por Gmail: cuerpo corto + el HTML interactivo adjunto
+    (el correo bloquea JS, así que se abre en el navegador). Entrega privada, sin hosting."""
     user = env.get("GMAIL_USER")
     pw = env.get("GMAIL_APP_PASSWORD")
     to = env.get("EMAIL_TO", "felipecood@gmail.com")
     if not user or not pw:
         print("  (sin GMAIL_USER/GMAIL_APP_PASSWORD → no se envió el correo)")
         return
-    msg = MIMEText(html, "html", "utf-8")
+    msg = MIMEMultipart()
     msg["Subject"] = "CEO Dashboard — " + dt.datetime.now().strftime("%d/%m/%Y")
     msg["From"] = user
     msg["To"] = to
+    body = ("<div style=\"font-family:Arial,sans-serif;color:#2A211C\">"
+            "<h2 style=\"color:#C9372A\">Tu CEO Dashboard de la semana</h2>"
+            "<p>Está adjunto como <b>dashboard.html</b>. Ábrelo en el navegador para el cuadro de mando "
+            "interactivo: haz clic en cada marca para ver sus RRSS, decisiones, ingresos y costos.</p>"
+            "<p style=\"color:#8A7E74;font-size:13px\">Al Día · community manager automatizado</p></div>")
+    msg.attach(MIMEText(body, "html", "utf-8"))
+    att = MIMEApplication(Path(html_path).read_bytes(), _subtype="html")
+    att.add_header("Content-Disposition", "attachment", filename="dashboard.html")
+    msg.attach(att)
     with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=ssl.create_default_context()) as s:
         s.login(user, pw)
         s.sendmail(user, [to], msg.as_string())
@@ -294,7 +426,7 @@ def main() -> None:
     (ROOT / "dashboard.html").write_text(html, encoding="utf-8")
     print(f"✓ dashboard.html generado ({len(data)} cliente(s)).")
     if args.email:
-        send_dashboard_email(html, env)
+        send_dashboard_email(ROOT / "dashboard.html", env)
 
 
 if __name__ == "__main__":

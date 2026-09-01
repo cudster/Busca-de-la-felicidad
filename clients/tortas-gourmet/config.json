@@ -1,0 +1,14 @@
+{
+  "slug": "tortas-gourmet",
+  "name": "Tortas Gourmet",
+  "niche": "pastelería / tortas gourmet",
+  "brand_color": "#D4537E",
+  "channels": {
+    "instagram": { "enabled": true, "handle": "tortas.gourmet", "ig_user_id_env": "TORTAS_IG_USER_ID", "token_env": "TORTAS_TOKEN" },
+    "tiktok":   { "enabled": true },
+    "youtube":  { "enabled": true },
+    "linkedin": { "enabled": true }
+  },
+  "goals": { "primary": "pedidos y reconocimiento de marca" },
+  "finances": { "monthly_revenue": 590000, "monthly_costs": 90000, "note": "EDITAR: plan contratado y costos reales" }
+}
