@@ -251,8 +251,8 @@ h1{font-size:24px;margin:0;} .sub{color:var(--soft);font-size:13px;margin:4px 0 
  <div id="home">
   <h1>CEO Dashboard <span style="color:var(--faint);font-weight:600;font-size:15px;">· Al Día</span></h1>
   <p class="sub">Actualizado __UPDATED__ · haz clic en una marca para ver su cuadro de mando</p>
-  <div class="kpis" id="kpis"></div>
-  <div class="grid" id="grid"></div>
+  <div class="kpis" id="kpis">__KPIS__</div>
+  <div class="grid" id="grid">__TILES__</div>
  </div>
  <div id="detail" class="hidden"></div>
  <noscript><div style="color:#AC9C8D">__FALLBACK__</div></noscript>
@@ -314,7 +314,6 @@ function showDetail(i){
   document.getElementById("home").classList.add("hidden"); d.classList.remove("hidden"); window.scrollTo(0,0);
 }
 function showHome(){document.getElementById("detail").classList.add("hidden");document.getElementById("home").classList.remove("hidden");}
-homeKPIs(); grid();
 </script></body></html>"""
 
 
@@ -354,15 +353,50 @@ def render_html(clients_data: list[dict]) -> str:
         })
     data_json = json.dumps(payload, ensure_ascii=False)
     updated = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-    fb = []
-    for p in payload:
-        fb.append("<b>" + p["name"] + "</b> (" + p.get("healthColor", "") + ")")
-        for lbl, tx in p["decisions"]:
-            fb.append(lbl + ": " + tx)
-        fb.append("Seguidores: " + str(p["followers"]) + " · canales sin conectar: próximamente")
-    fallback = " — ".join(fb)
-    return (_TEMPLATE.replace("__DATA__", data_json)
-            .replace("__UPDATED__", updated).replace("__FALLBACK__", fallback))
+
+    def _clp(n):
+        try:
+            return "$" + format(int(n), ",").replace(",", ".")
+        except Exception:
+            return "$0"
+
+    def _n(n):
+        try:
+            return format(int(n), ",").replace(",", ".")
+        except Exception:
+            return str(n)
+
+    tot_rev = sum(p["finances"]["revenue"] for p in payload)
+    tot_cost = sum(p["finances"]["cost"] for p in payload)
+    tot_pend = sum(p["pendientes"] for p in payload)
+    kpis_html = "".join(
+        f"<div class='kpi'><div class='l'>{l}</div><div class='v'>{v}</div></div>"
+        for l, v in [("Marcas", len(payload)), ("Ingresos / mes", _clp(tot_rev)),
+                     ("Margen / mes", _clp(tot_rev - tot_cost)), ("Decisiones pendientes", tot_pend)])
+    tiles = []
+    for i, p in enumerate(payload):
+        ig = next((c for c in p["channels"] if c["name"] == "Instagram"), None)
+        if p["followers"]:
+            foll = f"{_n(p['followers'])} seg"
+            if ig and ig.get("state") == "data":
+                t = ig.get("trend", 0)
+                ar = f"↑{t}%" if t > 10 else (f"↓{t}%" if t < -10 else f"→{t}%")
+                foll += f" · alcance {_n(ig.get('reach', 0))} {ar}"
+        else:
+            foll = "por conectar"
+        m = p["finances"]["margin"]; mcls = "marg-pos" if m >= 0 else "marg-neg"
+        tiles.append(
+            f"<div class='tile' onclick='showDetail({i})'>"
+            f"<div class='top' style='background:{p['color']}'></div><div class='body'>"
+            f"<h2>{p['name']}<span class='dot' style='background:{p['healthColor']}'></span></h2>"
+            f"<div class='niche'>{foll}</div>"
+            f"<div class='tk'><span class='kv'>Ingresos</span><span class='vv'>{_clp(p['finances']['revenue'])}</span></div>"
+            f"<div class='tk'><span class='kv'>Margen</span><span class='vv {mcls}'>{_clp(m)}</span></div>"
+            f"<div class='tk'><span class='kv'>Pendientes</span><span class='vv'>{p['pendientes']}</span></div></div></div>")
+    tiles_html = "".join(tiles)
+    return (_TEMPLATE.replace("__DATA__", data_json).replace("__UPDATED__", updated)
+            .replace("__KPIS__", kpis_html).replace("__TILES__", tiles_html)
+            .replace("__FALLBACK__", "Abre este archivo en tu navegador para el cuadro de mando interactivo."))
 
 
 def _load_env() -> dict:
