@@ -1,0 +1,27 @@
+{
+  "region": "CL",
+  "note": "Calendario de fechas comerciales de Chile para clientes retail de Al Día. lead_days = cuántos días ANTES de la fecha empieza la campaña (ventana de posts temáticos). angle = enfoque sugerido para el contenido. Fechas móviles (Pascua, Día de la Madre/Padre/Niño) precalculadas por año.",
+  "occasions": [
+    {"name": "San Valentín", "date": "2026-02-14", "lead_days": 12, "angle": "regalo para la pareja; romántico; pedidos anticipados; edición especial en dos porciones/para compartir"},
+    {"name": "Día de la Mujer", "date": "2026-03-08", "lead_days": 6, "angle": "celebrar y regalar a las mujeres importantes; tono empoderador y cálido"},
+    {"name": "Semana Santa / Pascua", "date": "2026-04-05", "lead_days": 12, "angle": "Pascua de Resurrección; chocolate, huevos, reunión familiar; edición de temporada"},
+    {"name": "Día de la Madre", "date": "2026-05-10", "lead_days": 16, "angle": "LA fecha más fuerte del año para pastelería; regalo para mamá; emocional; reserva anticipada para asegurar producción"},
+    {"name": "Día del Padre", "date": "2026-06-21", "lead_days": 12, "angle": "regalo para papá; sabores 'de hombre'; formato para compartir en familia"},
+    {"name": "Fiestas Patrias", "date": "2026-09-18", "lead_days": 12, "angle": "dieciocho chileno; sabores tradicionales; mesas dulces para asados/reuniones; edición tricolor"},
+    {"name": "Día del Niño", "date": "2026-08-02", "lead_days": 10, "angle": "celebrar a los niños; diseños divertidos y coloridos; regalo dulce"},
+    {"name": "Halloween", "date": "2026-10-31", "lead_days": 10, "angle": "temática terror/divertida; edición limitada; ideal para fiestas y colegios"},
+    {"name": "Navidad", "date": "2026-12-25", "lead_days": 22, "angle": "temporada alta; regalos, cenas y reuniones; encargos anticipados; edición navideña"},
+    {"name": "Año Nuevo", "date": "2026-12-31", "lead_days": 10, "angle": "celebración de fin de año; brindis; postres para la mesa de año nuevo"},
+
+    {"name": "San Valentín", "date": "2027-02-14", "lead_days": 12, "angle": "regalo para la pareja; romántico; pedidos anticipados"},
+    {"name": "Día de la Mujer", "date": "2027-03-08", "lead_days": 6, "angle": "celebrar y regalar a las mujeres importantes"},
+    {"name": "Semana Santa / Pascua", "date": "2027-03-28", "lead_days": 12, "angle": "Pascua de Resurrección; chocolate, reunión familiar"},
+    {"name": "Día de la Madre", "date": "2027-05-09", "lead_days": 16, "angle": "la fecha más fuerte del año; regalo para mamá; reserva anticipada"},
+    {"name": "Día del Padre", "date": "2027-06-20", "lead_days": 12, "angle": "regalo para papá; formato para compartir"},
+    {"name": "Día del Niño", "date": "2027-08-01", "lead_days": 10, "angle": "celebrar a los niños; diseños divertidos"},
+    {"name": "Fiestas Patrias", "date": "2027-09-18", "lead_days": 12, "angle": "dieciocho chileno; sabores tradicionales; mesas dulces"},
+    {"name": "Halloween", "date": "2027-10-31", "lead_days": 10, "angle": "temática terror/divertida; edición limitada"},
+    {"name": "Navidad", "date": "2027-12-25", "lead_days": 22, "angle": "temporada alta; encargos anticipados; edición navideña"},
+    {"name": "Año Nuevo", "date": "2027-12-31", "lead_days": 10, "angle": "celebración de fin de año; postres para la mesa"}
+  ]
+}

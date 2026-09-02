@@ -114,19 +114,74 @@ PILLAR_BRIEFS = {
     ),
 }
 
-# Tipo de post por pilar (rotación determinística para dar variedad).
-def _post_type(pillar: str, pillar_seq_index: int) -> str:
-    # Estrategia post-métricas (2026-08-30): el alcance está clavado <1% en una
-    # cuenta dormida. Los REELS son el único formato que llega a NO-seguidores
-    # (Explore/Reels), y con audio en tendencia (que agrega el dueño) se potencian.
-    # Casi todo va como reel; solo una imagen ocasional en technical_awe para variar.
-    if pillar == "technical_awe":
-        return "image" if pillar_seq_index % 3 == 0 else "reel"
-    return "reel"
+# Cadencia semanal fija (decisión del dueño 2026-09-01): 3 reels + 2 posts por
+# semana. El tipo depende SOLO del día de la semana en que cae la publicación:
+#   Lun (0), Mié (2), Sáb (5) -> REEL   (3/semana; llegan a no-seguidores vía Reels/Explore)
+#   Mar (1), Jue (3)          -> POST   (2/semana; imagen)
+# Así cada semana completa queda exactamente 3 reels + 2 imágenes, y el feed
+# mantiene un ritmo predecible.
+REEL_WEEKDAYS = {0, 2, 5}   # lunes, miércoles, sábado
+
+
+def _post_type(weekday: int) -> str:
+    return "reel" if weekday in REEL_WEEKDAYS else "image"
 
 
 def _extension_for_type(post_type: str) -> str:
     return "mp4" if post_type == "reel" else "jpg"
+
+
+# ---------------------------------------------------------------------------
+# Calendario de ocasiones (fechas fuertes) — hace que el contenido se anticipe
+# a Día de la Madre, Pascua, Fiestas Patrias, Navidad, etc. y salga temático.
+# ---------------------------------------------------------------------------
+
+OCCASIONS_DIR = ROOT / "data" / "occasions"
+
+
+def load_occasions(niche: str) -> list[dict]:
+    """Carga las ocasiones del nicho: data/occasions/<niche>.json.
+    Devuelve [] si no existe (el feature es opcional y no rompe nada)."""
+    path = OCCASIONS_DIR / f"{niche}.json"
+    if not path.exists():
+        return []
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+    out = []
+    for o in raw.get("occasions", []):
+        try:
+            o = dict(o)
+            o["_date"] = dt.date.fromisoformat(o["date"])
+            o["lead_days"] = int(o.get("lead_days", 10))
+            out.append(o)
+        except Exception:
+            continue
+    return out
+
+
+def tag_occasions(skeleton: list[dict], occasions: list[dict]) -> list[dict]:
+    """Etiqueta cada post cuya fecha caiga en la ventana [fecha - lead_days, fecha]
+    de una ocasión. Si hay varias, elige la más próxima. Añade slot['occasion']."""
+    if not occasions:
+        return skeleton
+    for slot in skeleton:
+        d = dt.date.fromisoformat(slot["date"])
+        candidates = [
+            o for o in occasions
+            if (o["_date"] - dt.timedelta(days=o["lead_days"])) <= d <= o["_date"]
+        ]
+        if not candidates:
+            continue
+        best = min(candidates, key=lambda o: (o["_date"] - d).days)
+        slot["occasion"] = {
+            "name": best["name"],
+            "date": best["date"],
+            "angle": best.get("angle", ""),
+            "days_until": (best["_date"] - d).days,
+        }
+    return skeleton
 
 
 # ---------------------------------------------------------------------------
@@ -163,7 +218,7 @@ def build_schedule(year: int, month: int) -> list[dict]:
         seq = pillar_counters.get(pillar, 0)
         pillar_counters[pillar] = seq + 1
 
-        post_type = _post_type(pillar, seq)
+        post_type = _post_type(date.weekday())
         week = i // 5 + 1  # 5 posts por "semana" -> carpetas assets/semana-N/
         pos = i + 1
         post_id = f"{year:04d}-{month:02d}-P{pos:02d}"
@@ -230,6 +285,23 @@ def build_user_prompt(skeleton: list[dict], month_label: str) -> str:
                       f"Lead with the hook, end with the comment question, ultra-short.")
         else:
             ground = "\n    Pure hook + feeling + comment question. Ultra-short. Invent no facts."
+        # Regla de media (evita el problema histórico "la foto no corresponde"):
+        # los REELS usan video de stock genérico, que NUNCA calza con un avión
+        # concreto (SR-71, Concorde, etc.). Por eso un reel debe ser un "spotter"
+        # universal: prohibido nombrar un modelo/aerolínea específicos en topic o
+        # visual_prompt. Las FOTOS sí pueden ser de un avión específico (foto curada).
+        if p["type"] == "reel":
+            ground += ("\n    GENERIC SPOTTER REEL: do NOT name any specific aircraft model "
+                       "or airline in `topic` or `visual_prompt` — a stock clip can't match a "
+                       "specific jet. Use universal imagery (a jet taking off / landing / banking, "
+                       "dramatic sky). The hook + comment question carry the post.")
+        occ = p.get("occasion")
+        if occ:
+            ground += (f"\n    🗓️ SEASONAL — this post is in the run-up to {occ['name']} "
+                       f"({occ['date']}, in ~{occ['days_until']} days). Make it CLEARLY and "
+                       f"meaningfully themed to {occ['name']}: {occ['angle']}. It must feel "
+                       f"intentional and timely (not generic filler): weave the occasion into the "
+                       f"hook, and when it fits, invite early orders / 'reserva anticipada'.")
         lines.append(
             f"- id={p['id']} | date={p['date']} | type={p['type']} | "
             f"pillar={p['pillar']}{cta_note}\n    {brief}{ground}"
@@ -707,6 +779,13 @@ def main() -> None:
 
     print(f"Generando calendario de {month_label} para Epic.Plane…")
     skeleton = build_schedule(year, month)
+    occasions = load_occasions(args.niche)
+    skeleton = tag_occasions(skeleton, occasions)
+    tagged = [s for s in skeleton if s.get("occasion")]
+    if tagged:
+        names = sorted({s["occasion"]["name"] for s in tagged})
+        print(f"  🗓️ Ocasiones detectadas este mes: {', '.join(names)} "
+              f"({len(tagged)} post(s) temáticos)")
     import soul
     skeleton = soul.assign_sources(
         skeleton, soul.load_facts(args.niche), soul.load_news(args.niche)
