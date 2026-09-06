@@ -184,6 +184,42 @@ def tag_occasions(skeleton: list[dict], occasions: list[dict]) -> list[dict]:
     return skeleton
 
 
+def load_rituals(niche: str) -> dict[int, dict]:
+    """Carga los rituales de comunidad del nicho: data/rituals/<niche>.json.
+    Devuelve {} si no existe (opcional, no rompe nada). Indexa por weekday."""
+    path = ROOT / "data" / "rituals" / f"{niche}.json"
+    if not path.exists():
+        return {}
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+    out: dict[int, dict] = {}
+    for r in raw.get("rituals", []):
+        try:
+            out[int(r["weekday"])] = {"name": r["name"], "brief": r.get("brief", "")}
+        except Exception:
+            continue
+    return out
+
+
+def tag_rituals(skeleton: list[dict], rituals: dict[int, dict]) -> list[dict]:
+    """Etiqueta los posts tipo 'reel' cuyo día de la semana tenga un ritual.
+    Las ocasiones tienen prioridad: si el post ya es temático, no se le pone ritual."""
+    if not rituals:
+        return skeleton
+    for slot in skeleton:
+        if slot.get("occasion"):
+            continue  # la ocasión manda
+        if slot.get("type") != "reel":
+            continue  # los rituales viven en los días-reel
+        d = dt.date.fromisoformat(slot["date"])
+        r = rituals.get(d.weekday())
+        if r:
+            slot["ritual"] = {"name": r["name"], "brief": r["brief"]}
+    return skeleton
+
+
 # ---------------------------------------------------------------------------
 # 1. Esqueleto del calendario (determinístico, sin IA)
 # ---------------------------------------------------------------------------
@@ -296,12 +332,17 @@ def build_user_prompt(skeleton: list[dict], month_label: str) -> str:
                        "specific jet. Use universal imagery (a jet taking off / landing / banking, "
                        "dramatic sky). The hook + comment question carry the post.")
         occ = p.get("occasion")
+        rit = p.get("ritual")
         if occ:
             ground += (f"\n    🗓️ SEASONAL — this post is in the run-up to {occ['name']} "
                        f"({occ['date']}, in ~{occ['days_until']} days). Make it CLEARLY and "
                        f"meaningfully themed to {occ['name']}: {occ['angle']}. It must feel "
                        f"intentional and timely (not generic filler): weave the occasion into the "
                        f"hook, and when it fits, invite early orders / 'reserva anticipada'.")
+        elif rit:
+            ground += (f"\n    🔁 COMMUNITY RITUAL — {rit['name']}. {rit['brief']} This is a named, "
+                       f"recurring weekly format followers should recognize: put the ritual name in "
+                       f"the caption so it feels like an event they can return to every week.")
         lines.append(
             f"- id={p['id']} | date={p['date']} | type={p['type']} | "
             f"pillar={p['pillar']}{cta_note}\n    {brief}{ground}"
@@ -786,6 +827,13 @@ def main() -> None:
         names = sorted({s["occasion"]["name"] for s in tagged})
         print(f"  🗓️ Ocasiones detectadas este mes: {', '.join(names)} "
               f"({len(tagged)} post(s) temáticos)")
+    rituals = load_rituals(args.niche)
+    skeleton = tag_rituals(skeleton, rituals)
+    ritual_slots = [s for s in skeleton if s.get("ritual")]
+    if ritual_slots:
+        rnames = sorted({s["ritual"]["name"] for s in ritual_slots})
+        print(f"  🔁 Rituales de comunidad: {', '.join(rnames)} "
+              f"({len(ritual_slots)} post(s))")
     import soul
     skeleton = soul.assign_sources(
         skeleton, soul.load_facts(args.niche), soul.load_news(args.niche)

@@ -1,0 +1,15 @@
+{
+  "note": "Rituales de comunidad: formatos recurrentes con nombre que caen SIEMPRE el mismo día de la semana, para crear hábito y disparar comentarios (la señal que hace crecer la cuenta). weekday: 0=lunes … 6=domingo. Solo se aplican a posts tipo 'reel' (los días-reel Lun/Mié/Sáb). Las OCASIONES (Día de la Madre, etc.) tienen prioridad sobre el ritual.",
+  "rituals": [
+    {
+      "weekday": 0,
+      "name": "Mystery Monday",
+      "brief": "MYSTERY MONDAY — a recurring community guessing game. Show a striking but slightly ambiguous jet moment and challenge followers to GUESS (the aircraft, airline, or airport). Frame it explicitly as the weekly game: open with 'Mystery Monday ✈️' and end asking for their guess ('first to name it wins bragging rights 👇'). The entire goal is comments — make guessing irresistible. Stay generic (do not name the answer in topic/visual_prompt)."
+    },
+    {
+      "weekday": 5,
+      "name": "Spotter Saturday",
+      "brief": "SPOTTER SATURDAY — a recurring community ritual where the FOLLOWERS are the stars. Invite them to share their OWN spotting photos and tag a spotting friend. Open with 'Spotter Saturday 📸' and end with a clear call to post their shot and tag someone ('drop your best shot & tag your spotting buddy 👇'). Warm, community-first, celebratory. Stay generic in the visual."
+    }
+  ]
+}
