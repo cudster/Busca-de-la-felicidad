@@ -25,6 +25,7 @@ No usa librerías externas (solo la stdlib de Python).
 
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 import urllib.parse
@@ -92,12 +93,35 @@ def mask(token: str) -> str:
     return token[:8] + "…" + token[-4:] if len(token) > 15 else "…"
 
 
+def _load_client(slug: str) -> dict:
+    """Resuelve nombres de env y @handle del cliente desde clients/<slug>/config.json."""
+    path = ROOT / "clients" / slug / "config.json"
+    if not path.exists():
+        # Epic.Plane por defecto (variables clásicas)
+        return {"ig_env": "IG_USER_ID", "token_env": "META_PAGE_TOKEN", "handle": None, "brand": slug}
+    cfg = json.loads(path.read_text(encoding="utf-8"))
+    ig = (cfg.get("channels", {}).get("instagram", {}) or {})
+    return {
+        "ig_env": ig.get("ig_user_id_env", "IG_USER_ID"),
+        "token_env": ig.get("token_env", "META_PAGE_TOKEN"),
+        "handle": (ig.get("handle") or "").lstrip("@") or None,
+        "brand": cfg.get("name", slug),
+    }
+
+
 def main() -> None:
+    ap = argparse.ArgumentParser(description="Obtiene el token durable de página + IG (multi-cliente).")
+    ap.add_argument("--client", default="epic-plane", help="Cliente/slug (clients/<slug>/config.json).")
+    args = ap.parse_args()
+    client = _load_client(args.client)
+
     env = load_env()
     app_id = env.get("META_APP_ID")
     app_secret = env.get("META_APP_SECRET")
     short_token = env.get("META_SHORT_TOKEN")
     preferred_page = env.get("META_PAGE_ID")  # opcional, si hay varias páginas
+    print(f"Cliente: {client['brand']} → escribe {client['ig_env']} / {client['token_env']}"
+          + (f" (busca la página conectada a @{client['handle']})" if client['handle'] else ""))
 
     missing = [k for k, v in {
         "META_APP_ID": app_id,
@@ -137,7 +161,25 @@ def main() -> None:
 
     with_ig = [p for p in pages if p.get("instagram_business_account")]
 
-    if preferred_page:
+    # Si el cliente tiene @handle, elige la página cuya IG coincide (multi-cliente).
+    chosen = None
+    if client["handle"]:
+        for p in with_ig:
+            iid = p["instagram_business_account"]["id"]
+            try:
+                uname = graph_get(iid, {"fields": "username", "access_token": ll_user_token}).get("username", "")
+            except Exception:
+                uname = ""
+            if uname.lower() == client["handle"].lower():
+                chosen = p
+                break
+        if not chosen:
+            listado = "\n".join(f"   - {p['name']} (id {p['id']})" for p in with_ig)
+            sys.exit(
+                f"No encontré una página conectada a @{client['handle']} entre tus páginas:\n{listado}\n"
+                f"→ Asegúrate de ser admin de la Página de FB de {client['brand']} y que su IG esté vinculada."
+            )
+    elif preferred_page:
         chosen = next((p for p in pages if p.get("id") == preferred_page), None)
         if not chosen:
             sys.exit(f"META_PAGE_ID={preferred_page} no está entre tus páginas.")
@@ -176,12 +218,11 @@ def main() -> None:
           f"({ig.get('followers_count','?')} seguidores)")
 
     print("→ 4/4 Guardando en .env…")
-    upsert_env({
-        "IG_USER_ID": ig_user_id,
-        "META_PAGE_ID": page_id,
-        "META_PAGE_TOKEN": page_token,
-    })
-    print("   ✓ Guardados IG_USER_ID, META_PAGE_ID y META_PAGE_TOKEN en .env")
+    updates = {client["ig_env"]: ig_user_id, client["token_env"]: page_token}
+    if client["ig_env"] == "IG_USER_ID":  # Epic.Plane: mantiene META_PAGE_ID por compatibilidad
+        updates["META_PAGE_ID"] = page_id
+    upsert_env(updates)
+    print("   ✓ Guardados " + " y ".join(updates.keys()) + " en .env")
 
     print(
         "\n✓ Fase C lista. Ya podemos construir el publicador (Fase D).\n"
