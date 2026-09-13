@@ -57,7 +57,7 @@ TEST_CAPTION = "Epic.Plane test ✈️ (post de prueba del sistema — se puede 
 # .env y llamadas a la Graph API
 # ---------------------------------------------------------------------------
 
-def load_env() -> dict[str, str]:
+def load_env(extra_keys=None) -> dict[str, str]:
     """Carga config desde .env y desde variables de entorno.
 
     Las variables de entorno tienen prioridad — así funciona tanto en local
@@ -72,7 +72,8 @@ def load_env() -> dict[str, str]:
                 continue
             k, _, v = line.partition("=")
             env[k.strip()] = v.strip().strip('"').strip("'")
-    for key in ("IG_USER_ID", "META_PAGE_TOKEN"):
+    keys = {"IG_USER_ID", "META_PAGE_TOKEN", "SHEET_ID"} | set(extra_keys or ())
+    for key in keys:
         if os.environ.get(key):
             env[key] = os.environ[key]
     return env
@@ -256,21 +257,29 @@ def cmd_run(env, month: str, dry_run: bool) -> None:
         print("→ Calendario actualizado (published:true en los que salieron).")
 
 
-def build_caption_row(r: dict) -> str:
-    """Caption a partir de una fila de la Google Sheet (hashtags ya es string)."""
-    parts = [str(r.get("caption_en", "")).strip()]
+def build_caption_row(r: dict, language: str = "en") -> str:
+    """Caption a partir de una fila de la Google Sheet (hashtags ya es string).
+    language='es' publica caption_es (marcas hispanas); 'en' publica caption_en.
+    Cae al otro idioma si el principal viene vacío."""
+    primary = "caption_es" if language == "es" else "caption_en"
+    secondary = "caption_en" if language == "es" else "caption_es"
+    text = str(r.get(primary, "")).strip() or str(r.get(secondary, "")).strip()
+    parts = [text]
     tags = str(r.get("hashtags", "")).strip()
     if tags:
         parts.append(tags)
     return "\n\n".join(p for p in parts if p)
 
 
-def cmd_run_sheet(env, dry_run: bool, only_post: str | None = None) -> None:
+def cmd_run_sheet(env, dry_run: bool, only_post: str | None = None,
+                  ig_id: str | None = None, token: str | None = None,
+                  sheet_id: str | None = None, language: str = "en") -> None:
     """Publica desde la Google Sheet las filas approved=TRUE, published=FALSE y ya vencidas.
     Con only_post (ej 'P02' o el id completo) publica solo ese post."""
     import sheets
-    ig_id, token = env["IG_USER_ID"], env["META_PAGE_TOKEN"]
-    rows = sheets.read_approved_posts()
+    ig_id = ig_id or env.get("IG_USER_ID")
+    token = token or env.get("META_PAGE_TOKEN")
+    rows = sheets.read_approved_posts(sheet_id)
     now = dt.datetime.now(dt.timezone.utc)
     if only_post:
         rows = [r for r in rows if str(r.get("id", "")).endswith(only_post.upper())]
@@ -302,17 +311,35 @@ def cmd_run_sheet(env, dry_run: bool, only_post: str | None = None) -> None:
         try:
             if r["type"] == "carousel":
                 urls = [u for u in re.split(r"[\s,]+", asset) if u]
-                media_id = publish_post(ig_id, token, "carousel", build_caption_row(r), media_urls=urls)
+                media_id = publish_post(ig_id, token, "carousel", build_caption_row(r, language), media_urls=urls)
             else:
-                media_id = publish_post(ig_id, token, r["type"], build_caption_row(r), media_url=asset)
-            sheets.mark_published(r["_row"], now.isoformat())
+                media_id = publish_post(ig_id, token, r["type"], build_caption_row(r, language), media_url=asset)
+            sheets.mark_published(r["_row"], now.isoformat(), sheet_id)
             print(f"     ✓ Publicado. Media ID: {media_id}")
         except RuntimeError as e:
             print(f"     ⚠️  Error: {e}")
 
 
+def load_client(slug: str) -> dict:
+    """Lee clients/<slug>/config.json y resuelve los nombres de env de IG/token/hoja
+    + el idioma de publicación. Cae a Epic.Plane si el cliente no define algo."""
+    path = ROOT / "clients" / slug / "config.json"
+    if not path.exists():
+        raise RuntimeError(f"No existe clients/{slug}/config.json")
+    cfg = json.loads(path.read_text(encoding="utf-8"))
+    ig = (cfg.get("channels", {}).get("instagram", {}) or {})
+    return {
+        "brand": cfg.get("name", slug),
+        "ig_env": ig.get("ig_user_id_env", "IG_USER_ID"),
+        "token_env": ig.get("token_env", "META_PAGE_TOKEN"),
+        "sheet_env": ig.get("sheet_id_env", "SHEET_ID"),
+        "language": cfg.get("language", "en"),
+    }
+
+
 def main() -> None:
-    ap = argparse.ArgumentParser(description="Epic.Plane — Publicador de Instagram (Módulo 2).")
+    ap = argparse.ArgumentParser(description="Publicador de Instagram multi-cliente (Módulo 2).")
+    ap.add_argument("--client", default="epic-plane", help="Cliente/slug (clients/<slug>/config.json). Por defecto epic-plane.")
     ap.add_argument("--check", action="store_true", help="Valida credenciales creando un contenedor de prueba (no publica).")
     ap.add_argument("--post-test", action="store_true", help="Publica un post de prueba REAL en la cuenta.")
     ap.add_argument("--sheet", action="store_true", help="Publica leyendo la Google Sheet (approved=TRUE, no publicado, vencido).")
@@ -322,10 +349,16 @@ def main() -> None:
     ap.add_argument("--dry-run", action="store_true", help="Con --run: muestra qué haría, sin publicar.")
     args = ap.parse_args()
 
-    env = load_env()
-    for k in ("IG_USER_ID", "META_PAGE_TOKEN"):
-        if not env.get(k):
-            sys.exit(f"Falta {k} en .env. Corre setup_meta.py primero.")
+    client = load_client(args.client)
+    # trae del entorno (Secrets de Actions o .env) los env específicos del cliente
+    env = load_env(extra_keys=(client["ig_env"], client["token_env"], client["sheet_env"]))
+    ig_id = env.get(client["ig_env"])
+    token = env.get(client["token_env"])
+    sheet_id = env.get(client["sheet_env"])
+    for name, val in ((client["ig_env"], ig_id), (client["token_env"], token)):
+        if not val:
+            sys.exit(f"Falta {name} para el cliente '{args.client}'. Configúralo en .env/Secrets.")
+    print(f"Cliente: {client['brand']} · idioma={client['language']} · hoja={client['sheet_env']}")
 
     try:
         if args.check:
@@ -333,7 +366,7 @@ def main() -> None:
         elif args.post_test:
             cmd_post_test(env)
         elif args.sheet:
-            cmd_run_sheet(env, args.dry_run, args.post)
+            cmd_run_sheet(env, args.dry_run, args.post, ig_id, token, sheet_id, client["language"])
         elif args.run:
             month = args.month or dt.datetime.now(dt.timezone.utc).strftime("%Y-%m")
             cmd_run(env, month, args.dry_run)

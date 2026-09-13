@@ -2,9 +2,10 @@
   "slug": "epic-plane",
   "name": "Epic.Plane",
   "niche": "aviación",
+  "language": "en",
   "brand_color": "#2E6FB6",
   "channels": {
-    "instagram": { "enabled": true, "handle": "epic.plane", "ig_user_id_env": "IG_USER_ID", "token_env": "META_PAGE_TOKEN" },
+    "instagram": { "enabled": true, "handle": "epic.plane", "ig_user_id_env": "IG_USER_ID", "token_env": "META_PAGE_TOKEN", "sheet_id_env": "SHEET_ID" },
     "youtube":  { "enabled": false },
     "linkedin": { "enabled": false },
     "tiktok":   { "enabled": false }

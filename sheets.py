@@ -75,10 +75,11 @@ def _credentials():
     return Credentials.from_service_account_file(str(path), scopes=SCOPES)
 
 
-def get_worksheet():
-    """Abre la hoja y devuelve la pestaña 'calendar' (case-insensitive)."""
+def get_worksheet(sheet_id: str | None = None):
+    """Abre la hoja y devuelve la pestaña 'calendar' (case-insensitive).
+    sheet_id opcional para multi-cliente; por defecto usa SHEET_ID del entorno."""
     import gspread
-    sheet_id = _env("SHEET_ID")
+    sheet_id = sheet_id or _env("SHEET_ID")
     if not sheet_id:
         raise RuntimeError("Falta SHEET_ID (en env o .env).")
     gc = gspread.authorize(_credentials())
@@ -237,10 +238,10 @@ def _is_true(v) -> bool:
     return v in (True, "TRUE", "true", 1, "1")
 
 
-def read_approved_posts() -> list[dict]:
+def read_approved_posts(sheet_id: str | None = None) -> list[dict]:
     """Filas con approved=TRUE y published=FALSE. Devuelve dicts con la fila +
     su número de fila en la hoja (_row) para poder marcar published después."""
-    _, ws = get_worksheet()
+    _, ws = get_worksheet(sheet_id)
     records = ws.get_all_records()
     out = []
     for i, r in enumerate(records, start=2):  # fila 1 = encabezado
@@ -250,8 +251,8 @@ def read_approved_posts() -> list[dict]:
     return out
 
 
-def mark_published(row_number: int, published_at: str) -> None:
+def mark_published(row_number: int, published_at: str, sheet_id: str | None = None) -> None:
     """Marca published=TRUE y published_at en una fila (por número de fila)."""
-    _, ws = get_worksheet()
+    _, ws = get_worksheet(sheet_id)
     ws.update_cell(row_number, PUBLISHED_COL_IDX + 1, "TRUE")
     ws.update_cell(row_number, HEADERS.index("published_at") + 1, published_at)

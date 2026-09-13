@@ -2,6 +2,7 @@
   "slug": "rossacuore",
   "name": "Rossacuore",
   "niche": "pastelería premium artesanal (tortas de autor italianas)",
+  "language": "es",
   "brand_color": "#C4845A",
   "palette": {
     "tinta": "#2B1710",
@@ -13,7 +14,7 @@
     "perla": "#F6EFE3"
   },
   "channels": {
-    "instagram": { "enabled": true, "handle": "rossacuore_chile", "ig_user_id_env": "ROSSACUORE_IG_USER_ID", "token_env": "ROSSACUORE_TOKEN" },
+    "instagram": { "enabled": true, "handle": "rossacuore_chile", "ig_user_id_env": "ROSSACUORE_IG_USER_ID", "token_env": "ROSSACUORE_TOKEN", "sheet_id_env": "ROSSACUORE_SHEET_ID" },
     "tiktok":   { "enabled": false },
     "youtube":  { "enabled": false },
     "linkedin": { "enabled": false }
