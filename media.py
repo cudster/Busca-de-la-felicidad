@@ -25,6 +25,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
+import subprocess
 import sys
 import urllib.error
 import urllib.parse
@@ -168,21 +170,86 @@ def search_photos(query: str, key: str, n: int) -> list[dict]:
             for p in chosen]
 
 
+def ffprobe_available() -> bool:
+    """¿Está ffprobe? Sin él NO podemos garantizar que el reel tenga sonido."""
+    try:
+        subprocess.run(["ffprobe", "-version"], capture_output=True, timeout=10)
+        return True
+    except Exception:
+        return False
+
+
+# Un stock puede traer una pista AAC COMPLETAMENTE MUDA: tener pista no es tener
+# sonido. Por eso medimos volumen real; por debajo de este umbral es silencio.
+SILENCE_DBFS = -50.0
+
+
+def _has_audio(url: str, seconds: int = 8) -> bool | None:
+    """True si el mp4 remoto trae audio QUE SUENA (no solo una pista muda).
+
+    Mide el volumen medio de los primeros segundos con ffmpeg volumedetect.
+    None = no se pudo verificar (ffmpeg ausente): nunca se asume que hay sonido.
+    """
+    try:
+        out = subprocess.run(
+            ["ffprobe", "-v", "error", "-select_streams", "a",
+             "-show_entries", "stream=codec_name", "-of", "csv=p=0", url],
+            capture_output=True, text=True, timeout=30)
+        if not out.stdout.strip():
+            return False                      # ni siquiera hay pista
+    except FileNotFoundError:
+        return None                           # ffprobe no instalado
+    except Exception:
+        return False
+    try:
+        p = subprocess.run(
+            ["ffmpeg", "-hide_banner", "-t", str(seconds), "-i", url,
+             "-af", "volumedetect", "-f", "null", "-"],
+            capture_output=True, text=True, timeout=180)
+        m = re.search(r"mean_volume:\s*(-?[\d.]+|-inf) dB", p.stderr)
+        if not m:
+            return False
+        mean = -999.0 if m.group(1) == "-inf" else float(m.group(1))
+        return mean > SILENCE_DBFS            # ¿suena de verdad?
+    except FileNotFoundError:
+        return None
+    except Exception:
+        return False
+
+
 def search_video(query: str, key: str) -> dict | None:
+    # per_page alto: los reels MUDOS son el problema — necesitamos candidatos para
+    # encontrar uno CON audio (el rugido del motor > silencio; IG no deja poner
+    # audio de tendencia por API, así que el audio natural del clip es la mejor vía).
     url = ("https://api.pexels.com/videos/search?query=" + urllib.parse.quote(query) +
-           "&per_page=5&orientation=portrait")
+           "&per_page=15&orientation=portrait")
     def score(f: dict) -> tuple:
         w, h = f.get("width") or 0, f.get("height") or 0
         vertical = 1 if h > w else 0                       # reels van verticales
         hd = 1 if f.get("quality") == "hd" else 0
         good_size = 1 if 720 <= h <= 1920 else 0           # ni muy chico ni gigante
         return (vertical, good_size, hd, -abs(1350 - h))
+    if not ffprobe_available():
+        # Antes se devolvía el primer candidato "a ciegas" -> por eso salían reels mudos.
+        # Preferimos fallar fuerte: sin ffprobe no hay garantía de sonido.
+        sys.exit("✋ Falta ffprobe (viene con ffmpeg) y sin él no puedo garantizar que el "
+                 "reel tenga audio.\n   Instálalo con:  brew install ffmpeg")
+    fallback = None
     for v in _get(url, key).get("videos", []):
         files = [f for f in v.get("video_files", []) if f.get("file_type") == "video/mp4"]
-        if files:
-            pick = max(files, key=score)
-            return {"mp4": pick["link"], "thumb": v.get("image", ""), "by": v.get("user", {}).get("name", "")}
-    return None
+        if not files:
+            continue
+        pick = max(files, key=score)
+        cand = {"mp4": pick["link"], "thumb": v.get("image", ""),
+                "by": v.get("user", {}).get("name", ""), "has_audio": True}
+        if fallback is None:
+            fallback = {**cand, "has_audio": False}
+        if _has_audio(pick["link"]):     # ¡tiene audio! este es el bueno
+            return cand
+    # Ninguno tenía audio: devolvemos el mejor igual, marcado (mejor algo que nada).
+    if fallback:
+        fallback["by"] = fallback["by"] + " · ⚠ SIN AUDIO"
+    return fallback
 
 
 def media_for_post(post: dict, key: str, query: str) -> dict | None:

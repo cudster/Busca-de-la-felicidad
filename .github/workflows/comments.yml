@@ -1,0 +1,33 @@
+name: Responder comentarios (Community Manager)
+
+# Revisa los comentarios de los posts recientes cada 6 horas:
+# auto-responde los positivos simples y deja los delicados en la cola de escalados.
+# El estado (ya respondidos) y la cola se commitean de vuelta para no duplicar.
+on:
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+
+jobs:
+  reply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Responder comentarios (auto positivos + escalar resto)
+        env:
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          META_PAGE_TOKEN: ${{ secrets.META_PAGE_TOKEN }}
+        run: python comments.py --niche epic-plane --days 7 --post
+
+      - name: Guardar estado y cola de escalados
+        run: |
+          git config user.name "epic-plane-bot"
+          git config user.email "bot@epic.plane"
+          git add data/comments/ || true
+          git commit -m "comments: estado y escalados $(date -u +%F)" || echo "sin cambios"
+          git push || echo "nada que pushear"

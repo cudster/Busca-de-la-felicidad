@@ -1,0 +1,23 @@
+{
+  "brand": "Rossacuore",
+  "language": "es",
+  "posts_per_month": 20,
+  "reel_weekdays": [0, 2, 5],
+  "media_mode": "client_photos",
+  "cta_pillar": null,
+  "cta_value": "none",
+  "pillar_pattern": [
+    "ocasion_regalo", "producto_insignia", "detras_escena", "identidad_italiana", "ocasion_regalo",
+    "producto_insignia", "detras_escena", "ocasion_regalo", "identidad_italiana", "producto_insignia",
+    "detras_escena", "ocasion_regalo", "producto_insignia", "lanzamiento", "detras_escena",
+    "ocasion_regalo", "identidad_italiana", "producto_insignia", "detras_escena", "ocasion_regalo"
+  ],
+  "pillars": {
+    "producto_insignia": "Showcase a signature cake (Cuore della Dolcezza, Dolce Vita) as a desirable, artisanal object. Sensory: layers, textures, the chocolate seal. Aspirational, premium. The client's real photo is the star; caption is short and elegant.",
+    "detras_escena": "Behind-the-scenes / craft: hands at work, small batches, the chocolate seal being placed, the care. Conveys 'hecho a mano' and dedication. Warm, intimate, premium.",
+    "identidad_italiana": "Brand story / Italian identity: 'nace en Italia, se hace en Santiago', artisan heritage, author's touch. Emotional, refined, no data invented.",
+    "ocasion_regalo": "Gifting / occasion angle (birthdays, anniversaries, special days — the core driver). Position the cake as the memorable gift/centerpiece. Invite to reserve via WhatsApp, softly.",
+    "lanzamiento": "New collection teaser (e.g. Serie Keto), framed as an elegant NEW COLLECTION/edition — never as an 'oferta/promoción/descuento'. Build anticipation."
+  },
+  "voice_rules": "Reglas de formato y voz (para CADA post de Rossacuore):\n- Español de Chile, TUTEO. Marca de lujo cercana: elegante, sensorial, sobria.\n- Corto: 1-3 líneas. La primera línea es un gancho refinado. La FOTO REAL del cliente es la estrella.\n- Emojis con MODERACIÓN (0-2, refinados: 🤎🍫🎂✨). Nunca filas de emojis.\n- Cierra invitando suavemente a la acción: encargar/reservar por WhatsApp (link en la bio), o un gancho de interacción ('guarda', 'etiqueta a', '¿para qué celebración?').\n- PROHIBIDO ABSOLUTO: las palabras 'promoción' y 'descuento' (usa lanzamiento/edición/colección/novedad); y NUNCA menciones PRECIOS ni cifras de valor.\n- Nada que suene barato o de bajo estándar. No inventes ingredientes, orígenes ni premios: usa solo el hecho entregado.\n- CAMPOS: caption_es = el caption REAL publicado (escríbelo hermoso). caption_en = espejo breve en inglés. hook_en = el gancho (puede ir en español). topic = título corto. visual_prompt = describe en inglés la TOMA IDEAL del cliente (qué foto suya usar), no un prompt de stock. hashtags = 6-10 en español/marca (#tortasdeautor #rossacuore #pasteleriaartesanal ...).\nResponde llamando submit_calendar una sola vez, una entrada por id."
+}

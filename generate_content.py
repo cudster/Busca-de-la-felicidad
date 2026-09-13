@@ -123,8 +123,9 @@ PILLAR_BRIEFS = {
 REEL_WEEKDAYS = {0, 2, 5}   # lunes, miércoles, sábado
 
 
-def _post_type(weekday: int) -> str:
-    return "reel" if weekday in REEL_WEEKDAYS else "image"
+def _post_type(weekday: int, reel_weekdays: set | None = None) -> str:
+    rw = REEL_WEEKDAYS if reel_weekdays is None else reel_weekdays
+    return "reel" if weekday in rw else "image"
 
 
 def _extension_for_type(post_type: str) -> str:
@@ -224,8 +225,17 @@ def tag_rituals(skeleton: list[dict], rituals: dict[int, dict]) -> list[dict]:
 # 1. Esqueleto del calendario (determinístico, sin IA)
 # ---------------------------------------------------------------------------
 
-def build_schedule(year: int, month: int) -> list[dict]:
-    """Arma las 20 ranuras del mes: fecha, hora, pilar, tipo, rutas de assets."""
+def build_schedule(year: int, month: int, cfg: dict | None = None) -> list[dict]:
+    """Arma las ranuras del mes: fecha, hora, pilar, tipo, rutas de assets.
+    cfg (por nicho) define posts_per_month, reel_weekdays, pillar_pattern y CTA."""
+    cfg = cfg or load_content_config("epic-plane")
+    posts_per_month = int(cfg.get("posts_per_month", POSTS_PER_MONTH))
+    reel_weekdays = cfg.get("reel_weekdays", REEL_WEEKDAYS)
+    pattern = cfg.get("pillar_pattern", PILLAR_PATTERN)
+    cta_pillar = cfg.get("cta_pillar")
+    cta_value = cfg.get("cta_value", "none")
+    cta_from_week = int(cfg.get("cta_from_week", 3))
+    client_photos = cfg.get("media_mode") == "client_photos"
     days_in_month = _calendar.monthrange(year, month)[1]
 
     # Selecciona las fechas de publicación (días válidos de la semana), en orden.
@@ -234,35 +244,36 @@ def build_schedule(year: int, month: int) -> list[dict]:
         d = dt.date(year, month, day)
         if d.weekday() in POSTING_WEEKDAYS:
             posting_dates.append(d)
-        if len(posting_dates) >= POSTS_PER_MONTH:
+        if len(posting_dates) >= posts_per_month:
             break
 
-    if len(posting_dates) < POSTS_PER_MONTH:
+    if len(posting_dates) < posts_per_month:
         # Mes corto (p. ej. febrero): completa con los siguientes días hábiles.
         d = dt.date(year, month, days_in_month)
-        while len(posting_dates) < POSTS_PER_MONTH:
+        while len(posting_dates) < posts_per_month:
             d += dt.timedelta(days=1)
             if d.weekday() in POSTING_WEEKDAYS:
                 posting_dates.append(d)
 
-    posting_dates = posting_dates[:POSTS_PER_MONTH]
+    posting_dates = posting_dates[:posts_per_month]
 
     skeleton: list[dict] = []
     pillar_counters: dict[str, int] = {}
     for i, date in enumerate(posting_dates):
-        pillar = PILLAR_PATTERN[i]
+        pillar = pattern[i % len(pattern)]
         seq = pillar_counters.get(pillar, 0)
         pillar_counters[pillar] = seq + 1
 
-        post_type = _post_type(date.weekday())
+        post_type = _post_type(date.weekday(), reel_weekdays)
         week = i // 5 + 1  # 5 posts por "semana" -> carpetas assets/semana-N/
         pos = i + 1
         post_id = f"{year:04d}-{month:02d}-P{pos:02d}"
         time_utc = TIME_MORNING_UTC if i % 2 == 0 else TIME_EVENING_UTC
-        # Regla de fase (reactivación): semanas 1-2 SIN CTA de venta (cta=none para
-        # todos). Desde la semana 3, CTA solo en el pilar "camino del piloto".
-        cta = "affiliate_pilot_institute" if (pillar == "pilot_path" and week >= 3) else "none"
+        # CTA de venta: solo en el pilar de CTA del nicho y desde la semana N.
+        cta = cta_value if (cta_pillar and pillar == cta_pillar and week >= cta_from_week) else "none"
         ext = _extension_for_type(post_type)
+        # media_mode client_photos -> la foto la pone el cliente (no stock).
+        asset = "" if client_photos else f"assets/semana-{week}/p{pos:02d}.{ext}"
 
         skeleton.append(
             {
@@ -272,7 +283,7 @@ def build_schedule(year: int, month: int) -> list[dict]:
                 "type": post_type,
                 "pillar": pillar,
                 "cta": cta,
-                "asset_path": f"assets/semana-{week}/p{pos:02d}.{ext}",
+                "asset_path": asset,
                 "approved": False,
                 "published": False,
             }
@@ -296,19 +307,57 @@ VOICE_RULES = """Format & voice rules (apply to EVERY post):
 Return your answer by calling submit_calendar exactly once, one entry per post id, nothing else."""
 
 
-def build_user_prompt(skeleton: list[dict], month_label: str) -> str:
+# ---------------------------------------------------------------------------
+# Config de contenido POR NICHO (multi-cliente). Externaliza lo que antes estaba
+# amarrado a aviación: pilares, briefs, voz, marca, idioma y modo de media.
+# Si no existe knowledge/<niche>/content.json, cae a los defaults de Epic.Plane
+# (comportamiento idéntico al anterior — no rompe nada).
+# ---------------------------------------------------------------------------
+
+def load_content_config(niche: str) -> dict:
+    cfg = {
+        "brand": "Epic.Plane",
+        "language": "en",                 # idioma del caption que se publica
+        "posts_per_month": POSTS_PER_MONTH,
+        "reel_weekdays": sorted(REEL_WEEKDAYS),
+        "pillar_pattern": list(PILLAR_PATTERN),
+        "pillars": dict(PILLAR_BRIEFS),
+        "voice_rules": VOICE_RULES,
+        "media_mode": "auto",             # auto = stock/wiki (media.py) ; client_photos = las pone el cliente
+        "cta_pillar": "pilot_path",
+        "cta_value": "affiliate_pilot_institute",
+        "cta_from_week": 3,
+    }
+    path = ROOT / "knowledge" / niche / "content.json"
+    if path.exists():
+        try:
+            cfg.update(json.loads(path.read_text(encoding="utf-8")))
+        except Exception as e:
+            print(f"⚠️  content.json de '{niche}' inválido; uso defaults. ({e})")
+    cfg["reel_weekdays"] = set(cfg["reel_weekdays"])
+    return cfg
+
+
+def build_user_prompt(skeleton: list[dict], month_label: str, cfg: dict | None = None) -> str:
+    cfg = cfg or load_content_config("epic-plane")
+    brand = cfg.get("brand", "Epic.Plane")
+    pillars = cfg.get("pillars", PILLAR_BRIEFS)
+    lang_note = ""
+    if cfg.get("language") == "es":
+        lang_note = ("\nIMPORTANT — this brand publishes in SPANISH: `caption_es` is the REAL "
+                     "published caption (write it beautifully in Chilean Spanish, tuteo). "
+                     "`caption_en` = a short faithful English mirror. `hook_en` may be in Spanish.")
     lines = [
-        f"Generate the creative content for Epic.Plane's {month_label} calendar "
+        f"Generate the creative content for {brand}'s {month_label} calendar "
         f"({len(skeleton)} posts). Here is the fixed schedule — fill in the "
-        f"creative fields for each id:\n"
+        f"creative fields for each id:{lang_note}\n"
     ]
     for p in skeleton:
-        brief = PILLAR_BRIEFS[p["pillar"]]
-        if p["cta"] == "affiliate_pilot_institute":
-            cta_note = " [INCLUDE the Pilot Institute CTA — warm, link in bio, not salesy]"
-        elif p["pillar"] == "pilot_path":
-            cta_note = (" [NO CTA: aspirational/emotional only — do NOT mention Pilot "
-                        "Institute, courses, sign-ups, or 'link in bio']")
+        brief = pillars.get(p["pillar"], "")
+        if p["cta"] and p["cta"] == cfg.get("cta_value"):
+            cta_note = " [INCLUDE the sales CTA — warm, link in bio, not salesy]"
+        elif cfg.get("cta_pillar") and p["pillar"] == cfg.get("cta_pillar"):
+            cta_note = " [NO hard CTA: aspirational/emotional only — no sign-ups or 'link in bio']"
         else:
             cta_note = ""
         kind = p.get("source_kind", "none")
@@ -399,7 +448,7 @@ CALENDAR_TOOL = {
 # 3. Llamada al modelo
 # ---------------------------------------------------------------------------
 
-def generate_creative(skeleton: list[dict], month_label: str, model: str, niche: str = "epic-plane") -> dict[str, dict]:
+def generate_creative(skeleton: list[dict], month_label: str, model: str, niche: str = "epic-plane", cfg: dict | None = None) -> dict[str, dict]:
     """Llama a la API y devuelve un dict id -> campos creativos."""
     try:
         from anthropic import Anthropic
@@ -416,13 +465,14 @@ def generate_creative(skeleton: list[dict], month_label: str, model: str, niche:
     except Exception as e:  # pragma: no cover - error de configuración
         sys.exit(f"No pude inicializar el cliente de Anthropic: {e}")
 
+    cfg = cfg or load_content_config(niche)
     import soul
     try:
         persona = soul.load_persona(niche)
     except FileNotFoundError as e:
         sys.exit(str(e))
-    system = persona + "\n\n" + VOICE_RULES
-    user = build_user_prompt(skeleton, month_label)
+    system = persona + "\n\n" + cfg.get("voice_rules", VOICE_RULES)
+    user = build_user_prompt(skeleton, month_label, cfg)
 
     print(f"→ Llamando a {model} para generar {len(skeleton)} posts…")
     try:
@@ -818,8 +868,9 @@ def main() -> None:
             "Si de verdad quieres REGENERAR y perder ediciones/aprobaciones: usa --force."
         )
 
-    print(f"Generando calendario de {month_label} para Epic.Plane…")
-    skeleton = build_schedule(year, month)
+    cfg = load_content_config(args.niche)
+    print(f"Generando calendario de {month_label} para {cfg.get('brand', args.niche)}…")
+    skeleton = build_schedule(year, month, cfg)
     occasions = load_occasions(args.niche)
     skeleton = tag_occasions(skeleton, occasions)
     tagged = [s for s in skeleton if s.get("occasion")]
@@ -838,7 +889,7 @@ def main() -> None:
     skeleton = soul.assign_sources(
         skeleton, soul.load_facts(args.niche), soul.load_news(args.niche)
     )
-    creative = generate_creative(skeleton, month_label, args.model, args.niche)
+    creative = generate_creative(skeleton, month_label, args.model, args.niche, cfg)
     posts = merge(skeleton, creative)
 
     json_path = write_json(year, month, posts)

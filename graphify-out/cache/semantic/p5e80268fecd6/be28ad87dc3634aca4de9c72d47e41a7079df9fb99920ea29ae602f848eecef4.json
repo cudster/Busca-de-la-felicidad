@@ -1,0 +1,1 @@
+{"nodes": [], "edges": [], "hyperedges": [{"id": "agency_cockpit_system", "label": "Agency Cockpit System", "nodes": ["docs_ceo_dashboard_plan", "docs_motor_fan_experto_plan", "youtube_autos_pov_persona"], "relation": "participate_in", "confidence": "EXTRACTED", "confidence_score": 0.9, "source_file": "docs/superpowers/specs/2026-08-30-ceo-dashboard-design.md"}]}

@@ -1,0 +1,11 @@
+id,subject,fact,detail,source,tags,pillar
+F01,Rossacuore,Nace en Italia y se hace en Santiago,Inspiración de la pastelería italiana llevada a tortas de autor hechas en Las Condes,cliente,italiana identidad,story
+F02,Elaboración,Cada torta se hace a mano en pequeños lotes,Fabricación artesanal con la misma dedicación en la primera y la última de la semana,cliente,artesanal craft,craft
+F03,Sello de chocolate,Un sello de chocolate firma cada creación,Como una firma propia de autor sobre cada torta,cliente,de-autor firma,craft
+F04,Cuore della Dolcezza,Línea insignia de la casa,Una de las creaciones estrella para destacar este trimestre,cliente,producto insignia,product
+F05,Dolce Vita,Línea insignia de la casa,Creación destacada de la temporada,cliente,producto insignia,product
+F06,Serie Keto,Nueva colección de autor keto,Próximo lanzamiento; presentar como colección elegante y de autor,cliente,lanzamiento coleccion,product
+F07,Ingredientes,Ingredientes de origen cuidadosamente seleccionados,Materias primas selectas para un resultado premium,cliente,selecta ingredientes,craft
+F08,Packaging,Packaging elegante pensado para regalar,El lujo también está en cómo se entrega y se regala,cliente,lujo regalo,product
+F09,Ocasiones,Ideal para cumpleaños aniversarios y celebraciones,El cliente ideal encarga para días especiales y regalos memorables,cliente,ocasion regalo,occasion
+F10,Despacho,Despacho a toda la Región Metropolitana,Desde Las Condes a toda la RM; encargos por WhatsApp,cliente,servicio despacho,service

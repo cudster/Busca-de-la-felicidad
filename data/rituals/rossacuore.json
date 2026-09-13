@@ -1,0 +1,20 @@
+{
+  "note": "Rituales de comunidad de Rossacuore: formatos recurrentes con nombre, siempre el mismo día, para crear hábito y conversación. weekday: 0=lunes … 6=domingo. IMPORTANTE: solo sirven días que el calendario realmente publica (lun, mar, mié, jue, sáb = 0,1,2,3,5); reels caen lun/mié/sáb. Las OCASIONES (Día de la Madre, Navidad…) tienen prioridad sobre el ritual. Todos respetan la marca: tono elegante, sin precios y sin lenguaje de promoción/descuento.",
+  "rituals": [
+    {
+      "weekday": 2,
+      "name": "Detrás del Delantal",
+      "brief": "DETRÁS DEL DELANTAL — ritual semanal de detrás de escena. Muestra el oficio real: manos trabajando, masas que reposan, el chocolate templado, el sello de autor al cierre. Abre nombrando el ritual ('Detrás del delantal 🤎') y cierra con una pregunta de oficio que invite a responder ('¿qué parte del proceso te sorprende más?'). Tono sereno, sensorial, de casa con oficio. Sin precios ni lenguaje de promoción."
+    },
+    {
+      "weekday": 3,
+      "name": "La Pieza de la Semana",
+      "brief": "LA PIEZA DE LA SEMANA — ritual de jueves que presenta UNA creación con nombre propio (por ejemplo Cuore della Dolcezza o Dolce Vita) como se presenta una obra: qué la compone, su textura, para qué celebración fue pensada. Abre con 'La pieza de la semana' y cierra invitando a conversar por WhatsApp para reservarla para una fecha. Elegante, pausado, jamás precios ni descuentos."
+    },
+    {
+      "weekday": 5,
+      "name": "Mesa de Fin de Semana",
+      "brief": "MESA DE FIN DE SEMANA — ritual de sábado centrado en la CELEBRACIÓN y en la comunidad. Muestra la torta ya servida, la mesa, el momento compartido, e invita a los seguidores a contar qué están celebrando este fin de semana o a compartir la foto de su mesa Rossacuore. Abre con 'Mesa de fin de semana' y cierra con una pregunta cálida ('¿qué celebras este fin de semana?'). El objetivo es conversación, no venta. Sin precios."
+    }
+  ]
+}

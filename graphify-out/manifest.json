@@ -1,0 +1,308 @@
+{
+  "assets.py": {
+    "mtime": 1785897525.896829,
+    "seen": 1788874478.0974422,
+    "ast_hash": "356e50553d5d7ba7b9c05ee06d3f413c",
+    "semantic_hash": "356e50553d5d7ba7b9c05ee06d3f413c"
+  },
+  "calendar/2026-08.bak.json": {
+    "mtime": 1786071790.6744096,
+    "seen": 1788874478.097445,
+    "ast_hash": "9150a0ca9d0e2b485c521c1be3c9849f",
+    "semantic_hash": "9150a0ca9d0e2b485c521c1be3c9849f"
+  },
+  "calendar/2026-08.json": {
+    "mtime": 1786392217.477777,
+    "seen": 1788874478.097446,
+    "ast_hash": "a26452b504095049fa20b44db63c8866",
+    "semantic_hash": "a26452b504095049fa20b44db63c8866"
+  },
+  "calendar/2026-08.pre-pivot.bak.json": {
+    "mtime": 1786391735.750068,
+    "seen": 1788874478.097447,
+    "ast_hash": "194eda91ad38c690ee8a7c46766d09eb",
+    "semantic_hash": "194eda91ad38c690ee8a7c46766d09eb"
+  },
+  "calendar/2026-09.json": {
+    "mtime": 1788317365.5029633,
+    "seen": 1788874478.0974479,
+    "ast_hash": "9fe133308325aaf3ae11e5f0c70803b2",
+    "semantic_hash": "9fe133308325aaf3ae11e5f0c70803b2"
+  },
+  "clients/epic-plane/config.json": {
+    "mtime": 1788229802.5687888,
+    "seen": 1788874478.0974479,
+    "ast_hash": "4b66870c312b4a075d20aed95db6bc4c",
+    "semantic_hash": "4b66870c312b4a075d20aed95db6bc4c"
+  },
+  "clients/tortas-gourmet/config.json": {
+    "mtime": 1788229808.1269546,
+    "seen": 1788874478.097449,
+    "ast_hash": "7f56000cc7b958adf4e9ef6266f8be51",
+    "semantic_hash": "7f56000cc7b958adf4e9ef6266f8be51"
+  },
+  "curate.py": {
+    "mtime": 1787105200.12995,
+    "seen": 1788874478.09745,
+    "ast_hash": "65872c9824b3c1e1d02ad44ce499caef",
+    "semantic_hash": "65872c9824b3c1e1d02ad44ce499caef"
+  },
+  "curate_sources.json": {
+    "mtime": 1787105207.0667121,
+    "seen": 1788874478.097451,
+    "ast_hash": "e0d82747910e1c44c631338490fb2f41",
+    "semantic_hash": "e0d82747910e1c44c631338490fb2f41"
+  },
+  "daily_email.py": {
+    "mtime": 1786840526.7463012,
+    "seen": 1788874478.097451,
+    "ast_hash": "4c8e7c2ce1203ceb89166c24f990125a",
+    "semantic_hash": "4c8e7c2ce1203ceb89166c24f990125a"
+  },
+  "dashboard.py": {
+    "mtime": 1788313196.9336476,
+    "seen": 1788874478.097452,
+    "ast_hash": "4c7d2607fb93f80b276bc08f922bd91d",
+    "semantic_hash": "4c7d2607fb93f80b276bc08f922bd91d"
+  },
+  "data/news/epic-plane.json": {
+    "mtime": 1787198406.9801776,
+    "seen": 1788874478.097453,
+    "ast_hash": "fb7782c80900abc20de99db8d3feb478",
+    "semantic_hash": "fb7782c80900abc20de99db8d3feb478"
+  },
+  "data/occasions/chile-retail.json": {
+    "mtime": 1788318606.6286302,
+    "seen": 1788874478.097454,
+    "ast_hash": "8509fbeef4aac849b38109766f8d6940",
+    "semantic_hash": "8509fbeef4aac849b38109766f8d6940"
+  },
+  "data/occasions/tortas-gourmet.json": {
+    "mtime": 1788318680.4954593,
+    "seen": 1788874478.097455,
+    "ast_hash": "8509fbeef4aac849b38109766f8d6940",
+    "semantic_hash": "8509fbeef4aac849b38109766f8d6940"
+  },
+  "data/rituals/epic-plane.json": {
+    "mtime": 1788710932.7596352,
+    "seen": 1788874478.097455,
+    "ast_hash": "fee7153a3089d5ba04f75aaa95d21039",
+    "semantic_hash": "fee7153a3089d5ba04f75aaa95d21039"
+  },
+  "generate_content.py": {
+    "mtime": 1788710963.1491523,
+    "seen": 1788874478.0974562,
+    "ast_hash": "b17f9d0ee6c59b6234c0aada8cc471f7",
+    "semantic_hash": "b17f9d0ee6c59b6234c0aada8cc471f7"
+  },
+  "media.py": {
+    "mtime": 1787414299.867781,
+    "seen": 1788874478.097457,
+    "ast_hash": "9db5cccf50ea59a13d4c6814f9bb732f",
+    "semantic_hash": "9db5cccf50ea59a13d4c6814f9bb732f"
+  },
+  "metrics.py": {
+    "mtime": 1786388552.6719162,
+    "seen": 1788874478.097458,
+    "ast_hash": "96566468c6bebf07b57e352c4b64c7ea",
+    "semantic_hash": "96566468c6bebf07b57e352c4b64c7ea"
+  },
+  "publish.py": {
+    "mtime": 1785987450.4416575,
+    "seen": 1788874478.097458,
+    "ast_hash": "27b9d2ad68cd09bec4c083929dee00b1",
+    "semantic_hash": "27b9d2ad68cd09bec4c083929dee00b1"
+  },
+  "repost.py": {
+    "mtime": 1788711132.0179663,
+    "seen": 1788874478.0974588,
+    "ast_hash": "869baea13fd2357354d7dd45863f4f3b",
+    "semantic_hash": "869baea13fd2357354d7dd45863f4f3b"
+  },
+  "review_deck.py": {
+    "mtime": 1786073658.9429262,
+    "seen": 1788874478.09746,
+    "ast_hash": "5a08c861ad73b16b05b2bf409bd4e9c0",
+    "semantic_hash": "5a08c861ad73b16b05b2bf409bd4e9c0"
+  },
+  "setup_meta.py": {
+    "mtime": 1785895940.827946,
+    "seen": 1788874478.097461,
+    "ast_hash": "222f2bd1cf5f4a640be2f74b69f97a12",
+    "semantic_hash": "222f2bd1cf5f4a640be2f74b69f97a12"
+  },
+  "sheets.py": {
+    "mtime": 1785986996.6669714,
+    "seen": 1788874478.097462,
+    "ast_hash": "73f95782ba173dce89b0d2d953aba1cf",
+    "semantic_hash": "73f95782ba173dce89b0d2d953aba1cf"
+  },
+  "soul.py": {
+    "mtime": 1787105432.1416845,
+    "seen": 1788874478.097462,
+    "ast_hash": "f3dcbdd3e4d06a0fff72951e4e7ff353",
+    "semantic_hash": "f3dcbdd3e4d06a0fff72951e4e7ff353"
+  },
+  "tests/__init__.py": {
+    "mtime": 1787104753.6654494,
+    "seen": 1788874478.0974631,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "tests/test_curate.py": {
+    "mtime": 1787105188.3568683,
+    "seen": 1788874478.097464,
+    "ast_hash": "ebe6e85bef2ef4fedc986fd1f1f94419",
+    "semantic_hash": "ebe6e85bef2ef4fedc986fd1f1f94419"
+  },
+  "tests/test_dashboard.py": {
+    "mtime": 1788104898.6797516,
+    "seen": 1788874478.097465,
+    "ast_hash": "81474cceef00c7d689a7daaf8dedc86f",
+    "semantic_hash": "81474cceef00c7d689a7daaf8dedc86f"
+  },
+  "tests/test_generate_prompt.py": {
+    "mtime": 1787105439.7772446,
+    "seen": 1788874478.097465,
+    "ast_hash": "f379023b5769db835ad42dbb9d0fba17",
+    "semantic_hash": "f379023b5769db835ad42dbb9d0fba17"
+  },
+  "tests/test_media.py": {
+    "mtime": 1787414315.9655187,
+    "seen": 1788874478.0974662,
+    "ast_hash": "197e65141dee6785e63e06c991b7be2f",
+    "semantic_hash": "197e65141dee6785e63e06c991b7be2f"
+  },
+  "tests/test_soul.py": {
+    "mtime": 1787197723.1582377,
+    "seen": 1788874478.097467,
+    "ast_hash": "a2a19abf9e9d3e09ff283f7fb0300b52",
+    "semantic_hash": "a2a19abf9e9d3e09ff283f7fb0300b52"
+  },
+  "tests/test_youtube.py": {
+    "mtime": 1788110580.8363516,
+    "seen": 1788874478.097468,
+    "ast_hash": "7bef6417c759da33ff4d0eeee6a80284",
+    "semantic_hash": "7bef6417c759da33ff4d0eeee6a80284"
+  },
+  "video_produce.py": {
+    "mtime": 1788146924.1177073,
+    "seen": 1788874478.097468,
+    "ast_hash": "0f4e125959e033f4bc99cccbcdb1db09",
+    "semantic_hash": "0f4e125959e033f4bc99cccbcdb1db09"
+  },
+  "youtube/autos-pov/config.json": {
+    "mtime": 1788110507.827794,
+    "seen": 1788874478.0974689,
+    "ast_hash": "7a78c93fb5f979578978b899e3717430",
+    "semantic_hash": "7a78c93fb5f979578978b899e3717430"
+  },
+  "youtube/autos-pov/plan-2026-10.json": {
+    "mtime": 1788147309.9674478,
+    "seen": 1788874478.09747,
+    "ast_hash": "16dac204d7ff896fe18eac822d958d0f",
+    "semantic_hash": "16dac204d7ff896fe18eac822d958d0f"
+  },
+  "youtube_generate.py": {
+    "mtime": 1788110569.9251208,
+    "seen": 1788874478.09747,
+    "ast_hash": "e185a4d5f3897a42fc84c37b317f5930",
+    "semantic_hash": "e185a4d5f3897a42fc84c37b317f5930"
+  },
+  "youtube_upload.py": {
+    "mtime": 1788111745.0216923,
+    "seen": 1788874478.097471,
+    "ast_hash": "47b00d8cadf19e2992a24ef0fbbd3693",
+    "semantic_hash": "47b00d8cadf19e2992a24ef0fbbd3693"
+  },
+  ".github/workflows/daily_report.yml": {
+    "mtime": 1786840568.2436318,
+    "seen": 1788874478.097472,
+    "ast_hash": "dbf49441cc5cf6412afb732c02ce2757",
+    "semantic_hash": "dbf49441cc5cf6412afb732c02ce2757"
+  },
+  ".github/workflows/dashboard.yml": {
+    "mtime": 1788109561.90399,
+    "seen": 1788874478.097473,
+    "ast_hash": "cb5d5c115767751b09d5a170821feec8",
+    "semantic_hash": "cb5d5c115767751b09d5a170821feec8"
+  },
+  ".github/workflows/publish.yml": {
+    "mtime": 1785984007.9398117,
+    "seen": 1788874478.097473,
+    "ast_hash": "d1182836f27f0792993d3190778e436f",
+    "semantic_hash": "d1182836f27f0792993d3190778e436f"
+  },
+  "CLAUDE.md": {
+    "mtime": 1785986420.0310202,
+    "seen": 1788874478.097474,
+    "ast_hash": "c83d808770f293938254b63d35a1c2f1",
+    "semantic_hash": "c83d808770f293938254b63d35a1c2f1"
+  },
+  "README.md": {
+    "mtime": 1785891314.8869443,
+    "seen": 1788874478.097475,
+    "ast_hash": "78b70cd4510229cd2dd2123ace54ed7d",
+    "semantic_hash": "78b70cd4510229cd2dd2123ace54ed7d"
+  },
+  "content/2026-08.md": {
+    "mtime": 1786391857.8313255,
+    "seen": 1788874478.097476,
+    "ast_hash": "26453b0e8a586f393ec9ab3c2241f719",
+    "semantic_hash": "26453b0e8a586f393ec9ab3c2241f719"
+  },
+  "content/2026-09.md": {
+    "mtime": 1788317223.5231974,
+    "seen": 1788874478.097476,
+    "ast_hash": "3555208531fa4137846efaabf175aee7",
+    "semantic_hash": "3555208531fa4137846efaabf175aee7"
+  },
+  "docs/al-dia/programa-embajadores-retail.md": {
+    "mtime": 1788711029.9685924,
+    "seen": 1788874478.097478,
+    "ast_hash": "77956551d831ba820cd61c2d9416120b",
+    "semantic_hash": "77956551d831ba820cd61c2d9416120b"
+  },
+  "docs/superpowers/plans/2026-08-18-motor-fan-experto.md": {
+    "mtime": 1787104371.0141282,
+    "seen": 1788874478.097478,
+    "ast_hash": "eaecf6fa2188f4d8808a3ff3e921a235",
+    "semantic_hash": "eaecf6fa2188f4d8808a3ff3e921a235"
+  },
+  "docs/superpowers/plans/2026-08-30-ceo-dashboard.md": {
+    "mtime": 1788103694.068879,
+    "seen": 1788874478.0974789,
+    "ast_hash": "e93631995bda6892211188040a1d131b",
+    "semantic_hash": "e93631995bda6892211188040a1d131b"
+  },
+  "docs/superpowers/specs/2026-08-18-motor-fan-experto-design.md": {
+    "mtime": 1787103910.0966198,
+    "seen": 1788874478.0974798,
+    "ast_hash": "3a1d3a84ca06382c69917140a2b9e509",
+    "semantic_hash": "3a1d3a84ca06382c69917140a2b9e509"
+  },
+  "docs/superpowers/specs/2026-08-30-ceo-dashboard-design.md": {
+    "mtime": 1788102955.3970404,
+    "seen": 1788874478.097481,
+    "ast_hash": "989f2580e8e3b05eb64e548131590bdb",
+    "semantic_hash": "989f2580e8e3b05eb64e548131590bdb"
+  },
+  "persona/epic-plane.md": {
+    "mtime": 1787104766.3771853,
+    "seen": 1788874478.097481,
+    "ast_hash": "e83caac04b997302c225e9e610682f05",
+    "semantic_hash": "e83caac04b997302c225e9e610682f05"
+  },
+  "review_deck.html": {
+    "mtime": 1787199092.676033,
+    "seen": 1788874478.097482,
+    "ast_hash": "1835a1a3accfe7a49d20f6e2c875f6a4",
+    "semantic_hash": "1835a1a3accfe7a49d20f6e2c875f6a4"
+  },
+  "youtube/autos-pov/persona.md": {
+    "mtime": 1788146944.044838,
+    "seen": 1788874478.097483,
+    "ast_hash": "8f02b2ab371d722d915bb25648aafe58",
+    "semantic_hash": "8f02b2ab371d722d915bb25648aafe58"
+  }
+}

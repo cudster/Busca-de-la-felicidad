@@ -1,0 +1,31 @@
+{
+  "slug": "rossacuore",
+  "name": "Rossacuore",
+  "niche": "pastelería premium artesanal (tortas de autor italianas)",
+  "brand_color": "#C4845A",
+  "palette": {
+    "tinta": "#2B1710",
+    "cacao": "#1A0A04",
+    "cobre": "#C4845A",
+    "cobre_osc": "#8C5539",
+    "oro": "#D4A574",
+    "crema": "#F5EDE4",
+    "perla": "#F6EFE3"
+  },
+  "channels": {
+    "instagram": { "enabled": true, "handle": "rossacuore_chile", "ig_user_id_env": "ROSSACUORE_IG_USER_ID", "token_env": "ROSSACUORE_TOKEN" },
+    "tiktok":   { "enabled": false },
+    "youtube":  { "enabled": false },
+    "linkedin": { "enabled": false }
+  },
+  "goals": { "primary": "pedidos y consultas por WhatsApp; reconocimiento premium" },
+  "contacts": {
+    "owner": "Verónica Pagueguy (Fundadora/GG) — veronica.pagueguy@gmail.com",
+    "approver": "Christian Cood — coodchristian@hotmail.com",
+    "approval_sla": "el mismo día",
+    "publish_mode": "cliente aprueba antes de publicar",
+    "comments": "juntos (Al Día + cliente)"
+  },
+  "plan": "Crecimiento ($390.000/mes) — solo Instagram",
+  "finances": { "monthly_revenue": 390000, "monthly_costs": 60000, "note": "Plan Crecimiento, 1 canal. Costos: estimado a afinar." }
+}
