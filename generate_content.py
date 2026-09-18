@@ -604,17 +604,28 @@ def merge(skeleton: list[dict], creative: dict[str, dict]) -> list[dict]:
     return merged
 
 
-def write_json(year: int, month: int, posts: list[dict]) -> Path:
+def _calendar_path(year: int, month: int, niche: str = "epic-plane") -> Path:
+    # Epic.Plane mantiene el nombre plano (compatibilidad); otros clientes llevan prefijo.
+    stem = f"{year:04d}-{month:02d}" if niche == "epic-plane" else f"{niche}-{year:04d}-{month:02d}"
+    return CALENDAR_DIR / f"{stem}.json"
+
+
+def _content_path(year: int, month: int, niche: str = "epic-plane") -> Path:
+    stem = f"{year:04d}-{month:02d}" if niche == "epic-plane" else f"{niche}-{year:04d}-{month:02d}"
+    return CONTENT_DIR / f"{stem}.md"
+
+
+def write_json(year: int, month: int, posts: list[dict], niche: str = "epic-plane") -> Path:
     CALENDAR_DIR.mkdir(parents=True, exist_ok=True)
-    path = CALENDAR_DIR / f"{year:04d}-{month:02d}.json"
+    path = _calendar_path(year, month, niche)
     data = {"month": f"{year:04d}-{month:02d}", "posts": posts}
     path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     return path
 
 
-def write_markdown(year: int, month: int, posts: list[dict]) -> Path:
+def write_markdown(year: int, month: int, posts: list[dict], niche: str = "epic-plane") -> Path:
     CONTENT_DIR.mkdir(parents=True, exist_ok=True)
-    path = CONTENT_DIR / f"{year:04d}-{month:02d}.md"
+    path = _content_path(year, month, niche)
 
     approved = sum(1 for p in posts if p.get("approved"))
     lines = [
@@ -806,7 +817,7 @@ def main() -> None:
 
     year, month = _parse_month(args.month)
     month_label = f"{year:04d}-{month:02d}"
-    json_path = CALENDAR_DIR / f"{month_label}.json"
+    json_path = _calendar_path(year, month, args.niche)
 
     # Modo aprobar/desaprobar: edita el .json de forma segura y re-exporta el .md.
     if args.approve or args.unapprove:
@@ -827,7 +838,7 @@ def main() -> None:
                 p["caption_es"] = s.get("caption_es", p["caption_es"])
                 changed += 1
         json_path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-        write_markdown(year, month, data["posts"])
+        write_markdown(year, month, data["posts"], args.niche)
         print(f"✓ {changed} captions acortados en el JSON.")
         try:
             import sheets
@@ -892,8 +903,8 @@ def main() -> None:
     creative = generate_creative(skeleton, month_label, args.model, args.niche, cfg)
     posts = merge(skeleton, creative)
 
-    json_path = write_json(year, month, posts)
-    md_path = write_markdown(year, month, posts)
+    json_path = write_json(year, month, posts, args.niche)
+    md_path = write_markdown(year, month, posts, args.niche)
 
     print(f"\n✓ Listo.")
     print(f"  Calendario JSON : {json_path}")
