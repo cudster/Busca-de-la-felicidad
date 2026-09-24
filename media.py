@@ -117,9 +117,11 @@ AIRCRAFT_WIKI = {
 def derive_wiki(post: dict) -> str | None:
     """Si el post trata de un avión específico, devuelve la búsqueda de Commons; si no, None."""
     text = (post.get("topic", "") + " " + post.get("visual_prompt", "")).lower()
-    for k, v in AIRCRAFT_WIKI.items():
+    # De la clave MÁS específica a la más genérica: "gimli" (Air Canada 767) debe
+    # ganarle a "767", si no el post del Gimli Glider salía con un United.
+    for k in sorted(AIRCRAFT_WIKI, key=len, reverse=True):
         if k in text:
-            return v
+            return AIRCRAFT_WIKI[k]
     return None
 
 

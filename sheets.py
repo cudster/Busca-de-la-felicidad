@@ -141,14 +141,26 @@ def write_calendar_to_sheet(posts: list[dict]) -> int:
             rowd = {hdr[i]: (r[i] if i < len(r) else "") for i in range(len(hdr))}
             by_id[str(rowd.get("id", ""))] = rowd
 
-    values = [HEADERS] + [_post_to_row(p, by_id.get(p["id"])) for p in posts]
+    # MERGE, no truncar. Antes esto escribía SOLO los posts recibidos y el
+    # ws.clear() de abajo borraba los meses anteriores: al subir octubre
+    # desaparecieron las filas de septiembre (y sus asset_path públicos), y el
+    # publicador dejó de encontrar la fecha de hoy -> la cuenta quedó muda.
+    # Ahora las filas cuyo id NO viene en `posts` se conservan tal cual.
+    nuevos = {p["id"] for p in posts}
+    filas = {p["id"]: _post_to_row(p, by_id.get(p["id"])) for p in posts}
+    for pid, rowd in by_id.items():
+        if pid and pid not in nuevos:
+            filas[pid] = [str(rowd.get(h, "")) for h in HEADERS]
+
+    _i = HEADERS.index("date")
+    values = [HEADERS] + [filas[k] for k in sorted(filas, key=lambda k: (filas[k][_i], k))]
 
     ws.clear()
     # USER_ENTERED para que =IMAGE() y las casillas TRUE/FALSE se interpreten.
     ws.update(values=values, range_name="A1", value_input_option="USER_ENTERED")
 
     try:
-        _apply_formatting(sh, ws, len(posts))
+        _apply_formatting(sh, ws, len(values) - 1)
     except Exception as e:  # el formato es cosmético; no debe romper el upsert
         print(f"   (aviso: no pude aplicar formato/casillas: {e})")
     return len(posts)
