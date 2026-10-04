@@ -1,15 +1,15 @@
 {
-  "note": "Rituales de comunidad: formatos recurrentes con nombre que caen SIEMPRE el mismo día de la semana, para crear hábito y disparar comentarios (la señal que hace crecer la cuenta). weekday: 0=lunes … 6=domingo. Solo se aplican a posts tipo 'reel' (los días-reel Lun/Mié/Sáb). Las OCASIONES (Día de la Madre, etc.) tienen prioridad sobre el ritual.",
+  "note": "Rituales de comunidad: formatos recurrentes con nombre, para crear hábito. weekday: 0=lunes … 6=domingo. Solo en posts tipo 'reel'. Las OCASIONES tienen prioridad. DESDE 2026-09-21: máximo 1 ritual por semana (se alternan), porque antes caían lunes Y sábado y se comían los formatos ganadores (drama/humor/opinion). Los briefs ya NO imponen su propio CTA ni prohíben nombrar el avión: el CTA lo manda la rotación guardar/compartir/comentar de las voice_rules, y el avión SÍ debe nombrarse en topic/visual_prompt para que la imagen corresponda.",
   "rituals": [
     {
       "weekday": 0,
       "name": "Mystery Monday",
-      "brief": "MYSTERY MONDAY — a recurring community guessing game. Show a striking but slightly ambiguous jet moment and challenge followers to GUESS (the aircraft, airline, or airport). Frame it explicitly as the weekly game: open with 'Mystery Monday ✈️' and end asking for their guess ('first to name it wins bragging rights 👇'). The entire goal is comments — make guessing irresistible. Stay generic (do not name the answer in topic/visual_prompt)."
+      "brief": "MYSTERY MONDAY — recurring weekly guessing game. Open the caption with 'Mystery Monday ✈️' and frame the aircraft as a challenge to identify. IMPORTANT: name the exact aircraft in `topic` and `visual_prompt` (the footage must match), but keep the CAPTION as a guess — reveal the name only at the end, as the payoff. The post's assigned CTA type (save / share / comment) still governs the closing line: on a guess-heavy day that will usually be COMMENT, but if this post was assigned SAVE or SHARE, honour that instead."
     },
     {
       "weekday": 5,
       "name": "Spotter Saturday",
-      "brief": "SPOTTER SATURDAY — a recurring community ritual where the FOLLOWERS are the stars. Invite them to share their OWN spotting photos and tag a spotting friend. Open with 'Spotter Saturday 📸' and end with a clear call to post their shot and tag someone ('drop your best shot & tag your spotting buddy 👇'). Warm, community-first, celebratory. Stay generic in the visual."
+      "brief": "SPOTTER SATURDAY — recurring ritual where the FOLLOWERS are the stars. Open with 'Spotter Saturday 📸' and celebrate the spotting community. Name the aircraft shown in `topic` and `visual_prompt` so the footage matches. The post's assigned CTA type (save / share / comment) governs the closing line — do not force 'drop your shot & tag' every week; vary it so the ritual stays fresh."
     }
   ]
 }

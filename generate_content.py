@@ -71,46 +71,69 @@ TIME_EVENING_UTC = "22:00"
 #   aviation_story = 4 (20%)  -> historias de aviación
 #   pilot_path     = 2 (10%)  -> camino del piloto (aquí va el CTA de afiliado)
 PILLAR_PATTERN = [
-    "spotting",       # 1
-    "spotting",       # 2
-    "technical_awe",  # 3
-    "spotting",       # 4
-    "spotting",       # 5
-    "aviation_story", # 6
-    "spotting",       # 7
-    "spotting",       # 8
-    "technical_awe",  # 9
-    "spotting",       # 10
-    "spotting",       # 11
-    "pilot_path",     # 12
-    "spotting",       # 13
-    "spotting",       # 14
-    "technical_awe",  # 15
-    "aviation_story", # 16
-    "spotting",       # 17
-    "spotting",       # 18
-    "technical_awe",  # 19
-    "pilot_path",     # 20
-]  # spotting=12, technical_awe=4, aviation_story=2, pilot_path=2 (post-métricas: visual épico corto)
+    "drama",      # 1
+    "game",       # 2
+    "spotting",   # 3
+    "humor",      # 4
+    "drama",      # 5
+    "spotting",   # 6
+    "game",       # 7
+    "opinion",    # 8
+    "spotting",   # 9
+    "humor",      # 10
+    "drama",      # 11
+    "pilot_path", # 12
+    "game",       # 13
+    "spotting",   # 14
+    "humor",      # 15
+    "opinion",    # 16
+    "drama",      # 17
+    "spotting",   # 18
+    "game",       # 19
+    "spotting",   # 20
+]  # drama=4, game=4, spotting=6, humor=3, opinion=2, pilot_path=1
+# Reequilibrado 2026-09-21 con datos reales: los históricos ganadores (500-1.700 likes)
+# eran drama/humor/juego/opinión. Lo educativo daba 10 likes y 0 guardados.
 
 # Descripción de cada pilar para el prompt del modelo.
+# Pilares REESCRITOS (2026-09-21) a partir de los datos reales de la cuenta: los
+# posts históricos con más guardados/likes (2021-22: 500-1.700 likes) eran DRAMA,
+# HUMOR, JUEGOS y OPINIÓN — entretenimiento de comunidad. Los pilares educativos
+# anteriores producían "placa de museo" (10 likes, 0 guardados). No enseñes: haz
+# sentir, reír o jugar.
 PILLAR_BRIEFS = {
-    "technical_awe": (
-        "Technical awe: mind-blowing aircraft facts, physics of flight, "
-        "engineering marvels. Should teach something surprising."
+    "drama": (
+        "DRAMA / spectacle: a close call, a crosswind landing that fights back, a go-around, "
+        "extreme weather, a moment that makes you gasp. Write it like you just watched it happen "
+        "and can't believe it. Short, breathless, emotional. NOT a lesson — a reaction. "
+        "Never real tragedy or fatal accidents; awe and adrenaline, not disaster."
+    ),
+    "humor": (
+        "HUMOR / relatable: the small absurdities every flyer and avgeek knows — the middle seat, "
+        "the boarding scrum, the guy clapping on landing, delays, avgeek obsessions. Write it like "
+        "a friend posting a meme caption, not like a brand. Self-aware, funny, human. "
+        "This is the format that historically got this account 500+ likes."
+    ),
+    "game": (
+        "GAME / challenge: make them PLAY. 'Can you name this aircraft?', 'Spot what's wrong in "
+        "this photo', 'Guess the airline from the livery', 'How many can you identify?'. State the "
+        "challenge in one line and ask them to drop their answer. Participation is the whole point — "
+        "the caption is an invitation, never an explanation."
+    ),
+    "opinion": (
+        "OPINION / this-or-that: a friendly, polarizing question the community will argue about. "
+        "'Best-looking jet ever: this or that?', 'Window or aisle?', '😍 or 🤢?'. Take a light "
+        "stance or present two sides. Must be genuinely divisive but never political or offensive."
     ),
     "spotting": (
-        "Spotting / epic visual: striking aircraft photography or video moments. "
-        "Caption is short, punchy, evocative — the image does the heavy lifting."
-    ),
-    "aviation_story": (
-        "Aviation story: famous incidents resolved, airline history, records, "
-        "legendary flights. Narrative arc that keeps people reading."
+        "SPOTTING / pure spectacle: one striking aircraft moment where the visual does everything. "
+        "One evocative line about what makes it beautiful or rare — name the aircraft. "
+        "Think 'this vortex looks like it's from a movie', not a physics explanation."
     ),
     "pilot_path": (
-        "Pilot path: how to become a pilot, training costs, licenses, career. "
-        "This post ALWAYS ends with a natural call-to-action pointing followers "
-        "to Pilot Institute via the link in bio."
+        "PILOT PATH: the dream of flying — what it feels like to get there, the view from the "
+        "office, the moment it becomes real. Aspirational and emotional, never a tuition brochure. "
+        "This is the post that carries the Pilot Institute affiliate CTA when assigned."
     ),
 }
 
@@ -198,26 +221,51 @@ def load_rituals(niche: str) -> dict[int, dict]:
     out: dict[int, dict] = {}
     for r in raw.get("rituals", []):
         try:
-            out[int(r["weekday"])] = {"name": r["name"], "brief": r.get("brief", "")}
+            out[int(r["weekday"])] = {"name": r["name"], "brief": r.get("brief", ""),
+                                      # opcional: "reel" o "image" para acotar el ritual a
+                                      # un tipo. Si no se indica, vale para el tipo que
+                                      # toque ese día (un ritual de foto es igual de válido).
+                                      "type": r.get("type")}
         except Exception:
             continue
     return out
 
 
 def tag_rituals(skeleton: list[dict], rituals: dict[int, dict]) -> list[dict]:
-    """Etiqueta los posts tipo 'reel' cuyo día de la semana tenga un ritual.
-    Las ocasiones tienen prioridad: si el post ya es temático, no se le pone ritual."""
+    """Etiqueta los posts cuyo día de la semana tenga un ritual.
+
+    Las ocasiones tienen prioridad: si el post ya es temático, no se le pone ritual.
+    Un ritual puede acotarse a un tipo con el campo opcional "type" ("reel"/"image");
+    sin ese campo sirve para días de foto también (hay rituales que son de foto,
+    como presentar una pieza de la semana).
+    """
     if not rituals:
         return skeleton
+    # MÁXIMO 1 RITUAL POR SEMANA (2026-09-21). Antes caían lunes Y sábado, o sea 2 de
+    # cada 3 reels, y se comían los formatos que los datos muestran como ganadores
+    # (drama/humor/opinion). Se alterna por número de semana ISO para que ambos
+    # rituales sigan apareciendo y mantengan el efecto de "evento recurrente".
+    orden = sorted(rituals.keys())
+    usados: set[tuple] = set()
     for slot in skeleton:
         if slot.get("occasion"):
             continue  # la ocasión manda
-        if slot.get("type") != "reel":
-            continue  # los rituales viven en los días-reel
         d = dt.date.fromisoformat(slot["date"])
         r = rituals.get(d.weekday())
-        if r:
-            slot["ritual"] = {"name": r["name"], "brief": r["brief"]}
+        if not r:
+            continue
+        if r.get("type") and r["type"] != slot.get("type"):
+            continue  # el ritual pide otro tipo de post
+        semana = d.isocalendar()[:2]          # (año, semana ISO)
+        if semana in usados:
+            continue                           # esta semana ya tiene su ritual
+        if len(orden) > 1:
+            # alterna: semanas pares -> primer ritual, impares -> segundo, etc.
+            preferido = orden[d.isocalendar()[1] % len(orden)]
+            if d.weekday() != preferido:
+                continue
+        usados.add(semana)
+        slot["ritual"] = {"name": r["name"], "brief": r["brief"]}
     return skeleton
 
 
@@ -298,12 +346,14 @@ def build_schedule(year: int, month: int, cfg: dict | None = None) -> list[dict]
 VOICE_RULES = """Format & voice rules (apply to EVERY post):
 - ULTRA-short: 1-2 lines, ~10-25 words. Never a paragraph.
 - Lead with awe/feeling, not a lesson. If there's a fact, ONE punchy line.
-- Every post ENDS with an interactive hook that begs a comment (a guess, a this-or-that, or a direct "who else?"). Comments are the #1 goal.
+- OBJECTIVE (this decides distribution): SAVES and SHARES first, comments second. Instagram ranks by saves, shares and watch time — not by likes. Every post must give a concrete REASON to save it (a fact/number/name worth keeping) or to send it to someone.
+- Every post ENDS with ONE call to action, and you must ROTATE across posts between these three kinds: (a) SAVE — "save this for your next spotting session"; (b) SHARE/TAG — "send this to the avgeek who'd lose it"; (c) COMMENT — a guess or this-or-that. Aim for roughly 40% save, 30% share/tag, 30% comment across the month. Never the same CTA two posts in a row.
+- Save-worthiness test: before writing, ask "would someone screenshot or save this?" If the answer is no, add a concrete, specific, keepable detail (exact model, a number, a record, a name) — vague awe is not saveable.
 - Emojis welcome and natural (✈️ signature; 😍🔥👀😱 when they fit). Never a robotic row of identical emojis.
 - Vary the structure across posts — do NOT reuse the same closing formula post after post.
 - Ground every specific claim in the fact/news provided for that post. Invent nothing.
 - hook_en: scroll-stopping first line (max ~8 words). caption_en: the full short caption. caption_es: same tone in neutral Latin-American Spanish ("tú").
-- hashtags: 6-10, lowercase, each starting with '#'. topic: short specific title. visual_prompt: vivid English prompt matched to the post type.
+- hashtags: EXACTLY 5, lowercase, each starting with '#'. Mix broad (#aviation) with niche (#avgeek #planespotting) + 1-2 specific to the post. Five targeted beats ten stuffed. topic: short specific title. visual_prompt: vivid English prompt matched to the post type.
 Return your answer by calling submit_calendar exactly once, one entry per post id, nothing else."""
 
 
@@ -352,6 +402,26 @@ def build_user_prompt(skeleton: list[dict], month_label: str, cfg: dict | None =
         f"({len(skeleton)} posts). Here is the fixed schedule — fill in the "
         f"creative fields for each id:{lang_note}\n"
     ]
+    # Radar de tendencias: lo que la COMUNIDAD de aviación está viendo esta semana
+    # (trends.py). Sirve para ir a la vanguardia en vez de inventar desde cero.
+    try:
+        import trends as _trends
+        _brief = _trends.brief_for_prompt()
+    except Exception:
+        _brief = ""
+    if _brief:
+        lines.append(
+            "WHAT THE AVIATION COMMUNITY IS INTO RIGHT NOW (real posts trending in the "
+            "aviation subreddits this week — this is your vanguard signal):\n"
+            f"{_brief}\n"
+            "PRIORITY: when one of these live signals fits a post's pillar, PREFER it over "
+            "the stored fact for that post — being on the live conversation beats being "
+            "encyclopedic. Aim to ride these signals in at least a third of the month. "
+            "Use them for angles, subjects and tone: which aircraft, liveries and moments "
+            "the community is reacting to RIGHT NOW. Never copy a title verbatim, never "
+            "invent facts from a headline you cannot verify, and never touch fatal "
+            "accidents or tragedy (drama = awe and adrenaline, never disaster).\n"
+        )
     for p in skeleton:
         brief = pillars.get(p["pillar"], "")
         if p["cta"] and p["cta"] == cfg.get("cta_value"):
@@ -370,16 +440,23 @@ def build_user_prompt(skeleton: list[dict], month_label: str, cfg: dict | None =
                       f"Lead with the hook, end with the comment question, ultra-short.")
         else:
             ground = "\n    Pure hook + feeling + comment question. Ultra-short. Invent no facts."
-        # Regla de media (evita el problema histórico "la foto no corresponde"):
-        # los REELS usan video de stock genérico, que NUNCA calza con un avión
-        # concreto (SR-71, Concorde, etc.). Por eso un reel debe ser un "spotter"
-        # universal: prohibido nombrar un modelo/aerolínea específicos en topic o
-        # visual_prompt. Las FOTOS sí pueden ser de un avión específico (foto curada).
+        # Fórmula de engagement para REELS (2026-09): en vez de un "spotter"
+        # genérico (que no gatilla likes/guardados), el reel se construye en torno a
+        # UN avión específico icónico/raro + un dato que impacta, en formato
+        # "adivina y revela". El visual_prompt DEBE nombrar ese avión exacto para que
+        # el media que se produzca calce (el flujo genera el media según el prompt).
         if p["type"] == "reel":
-            ground += ("\n    GENERIC SPOTTER REEL: do NOT name any specific aircraft model "
-                       "or airline in `topic` or `visual_prompt` — a stock clip can't match a "
-                       "specific jet. Use universal imagery (a jet taking off / landing / banking, "
-                       "dramatic sky). The hook + comment question carry the post.")
+            ground += ("\n    SPOT-THE-AIRCRAFT REEL (engagement formula): build it around ONE "
+                       "specific, iconic or rare aircraft. hook_en = a 3-second guess prompt "
+                       "('Can you name this jet? 👀'). caption_en = REVEAL the aircraft by name + "
+                       "ONE jaw-dropping fact, then a comment CTA ('Did you get it? 👇'). Name the "
+                       "exact model/airline in BOTH `topic` and `visual_prompt` (and describe the "
+                       "shot) so the footage matches the reveal. Specificity is what drives saves "
+                       "and comments — never a generic 'a jet taking off'."
+                       "\n    WATCH TIME (the #1 reel ranking signal): write for a clip UNDER 15s "
+                       "that loops cleanly — the reveal lands in the last beat so the viewer "
+                       "rewatches to check. The hook must land in the FIRST SECOND (no intro, no "
+                       "build-up). Describe that short, loopable shot in `visual_prompt`.")
         occ = p.get("occasion")
         rit = p.get("ritual")
         if occ:
@@ -418,12 +495,12 @@ CALENDAR_TOOL = {
                         "id": {"type": "string", "description": "The post id, exactly as given."},
                         "topic": {"type": "string"},
                         "hook_en": {"type": "string", "description": "Scroll-stopping first line, max ~8 words."},
-                        "caption_en": {"type": "string", "description": "ULTRA-short (1-2 lines, ~10-25 words), hyped/awe, 1-3 emojis (✈️ signature). MUST end with an interactive hook that begs a comment (guess / this-or-that / 'who else?'). No paragraphs, no emoji rows."},
+                        "caption_en": {"type": "string", "description": "ULTRA-short (1-2 lines, ~10-25 words), hyped/awe, 1-3 emojis (✈️ signature). Must carry ONE concrete keepable detail (exact model / number / record) so it is worth SAVING, and END with one CTA rotated across posts: SAVE ('save this for...'), SHARE/TAG ('send this to the avgeek who...'), or COMMENT (a guess / this-or-that). Saves and shares drive reach - prioritise them over comments. No paragraphs, no emoji rows."},
                         "caption_es": {"type": "string", "description": "Natural neutral Latin-American Spanish."},
                         "hashtags": {
                             "type": "array",
                             "items": {"type": "string"},
-                            "description": "6-10 hashtags, each starting with '#'.",
+                            "description": "EXACTLY 5 targeted hashtags, each starting with '#' (mix broad + niche).",
                         },
                         "visual_prompt": {"type": "string"},
                     },
