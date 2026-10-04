@@ -1,6 +1,9 @@
 name: Publicar en Instagram (desde Google Sheet)
 
-# Corre en los dos horarios de publicación y también se puede lanzar a mano
+# UNA sola corrida diaria: 12:00 UTC = 09:00 de Chile, que es cuando la cuenta
+# empieza a levantar visualizaciones. Se quitó la corrida de las 22:10 UTC
+# (19:10 de Chile) para que nada salga fuera de esa ventana.
+# También se puede lanzar a mano
 # desde la pestaña Actions.
 # La corrida de la mañana es 12:00 UTC = 09:00 de Chile (UTC-3), a pedido del
 # dueño. Ojo: el cron de GitHub Actions suele atrasarse 5-15 min, nunca adelantarse.
@@ -8,7 +11,6 @@ name: Publicar en Instagram (desde Google Sheet)
 on:
   schedule:
     - cron: "0 12 * * *"
-    - cron: "10 22 * * *"
   workflow_dispatch:
 
 jobs:

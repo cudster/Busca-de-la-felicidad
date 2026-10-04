@@ -3,8 +3,8 @@
   "posts": [
     {
       "id": "2026-10-P01",
-      "date": "2026-10-01",
-      "time_utc": "13:00",
+      "date": "2026-10-04",
+      "time_utc": "12:00",
       "type": "image",
       "pillar": "drama",
       "topic": "SR-71 Blackbird — Built With Enemy Titanium",
@@ -26,8 +26,8 @@
     },
     {
       "id": "2026-10-P02",
-      "date": "2026-10-03",
-      "time_utc": "22:00",
+      "date": "2026-10-05",
+      "time_utc": "12:00",
       "type": "reel",
       "pillar": "game",
       "topic": "Concorde Spot-the-Aircraft Reel — Mach 2 Reveal",
@@ -49,8 +49,8 @@
     },
     {
       "id": "2026-10-P03",
-      "date": "2026-10-05",
-      "time_utc": "13:00",
+      "date": "2026-10-09",
+      "time_utc": "12:00",
       "type": "reel",
       "pillar": "spotting",
       "topic": "A380 Rotate — Premium Economy Hidden Perks",
@@ -73,7 +73,7 @@
     {
       "id": "2026-10-P04",
       "date": "2026-10-06",
-      "time_utc": "22:00",
+      "time_utc": "12:00",
       "type": "image",
       "pillar": "humor",
       "topic": "747 Upper Deck — The Hump Was an Accident of History",
@@ -96,7 +96,7 @@
     {
       "id": "2026-10-P05",
       "date": "2026-10-07",
-      "time_utc": "13:00",
+      "time_utc": "12:00",
       "type": "reel",
       "pillar": "drama",
       "topic": "Air Canada 767 Gimli Glider — Spot-the-Aircraft Drama Reel",
@@ -119,7 +119,7 @@
     {
       "id": "2026-10-P06",
       "date": "2026-10-08",
-      "time_utc": "22:00",
+      "time_utc": "12:00",
       "type": "image",
       "pillar": "spotting",
       "topic": "C-17 Globemaster III — Arctic Mission Scrubbed",
@@ -142,7 +142,7 @@
     {
       "id": "2026-10-P07",
       "date": "2026-10-10",
-      "time_utc": "13:00",
+      "time_utc": "12:00",
       "type": "reel",
       "pillar": "game",
       "topic": "Spotter Saturday — Boeing 777 GE90 Engine Close-Up",
@@ -165,7 +165,7 @@
     {
       "id": "2026-10-P08",
       "date": "2026-10-12",
-      "time_utc": "22:00",
+      "time_utc": "12:00",
       "type": "reel",
       "pillar": "opinion",
       "topic": "Mystery Monday — Antonov An-225 Mriya",
@@ -188,7 +188,7 @@
     {
       "id": "2026-10-P09",
       "date": "2026-10-13",
-      "time_utc": "13:00",
+      "time_utc": "12:00",
       "type": "image",
       "pillar": "spotting",
       "topic": "MD-11 — Underrated Trijet Beauty",
@@ -211,7 +211,7 @@
     {
       "id": "2026-10-P10",
       "date": "2026-10-14",
-      "time_utc": "22:00",
+      "time_utc": "12:00",
       "type": "reel",
       "pillar": "humor",
       "topic": "The Float Before Touchdown — Relatable Avgeek Reel",
@@ -234,7 +234,7 @@
     {
       "id": "2026-10-P11",
       "date": "2026-10-15",
-      "time_utc": "13:00",
+      "time_utc": "12:00",
       "type": "image",
       "pillar": "drama",
       "topic": "Crosswind Greaser — Beechcraft Staggerwing Drama",
@@ -257,7 +257,7 @@
     {
       "id": "2026-10-P12",
       "date": "2026-10-17",
-      "time_utc": "22:00",
+      "time_utc": "12:00",
       "type": "reel",
       "pillar": "pilot_path",
       "topic": "Airbus A220 — Pilot's Office Reel",
@@ -280,7 +280,7 @@
     {
       "id": "2026-10-P13",
       "date": "2026-10-19",
-      "time_utc": "13:00",
+      "time_utc": "12:00",
       "type": "reel",
       "pillar": "game",
       "topic": "Boeing 787 Dreamliner — Flex Wing Reveal Reel",
@@ -303,7 +303,7 @@
     {
       "id": "2026-10-P14",
       "date": "2026-10-20",
-      "time_utc": "22:00",
+      "time_utc": "12:00",
       "type": "image",
       "pillar": "spotting",
       "topic": "Boeing 737 — Best-Selling Jet in History at Golden Hour",
@@ -326,7 +326,7 @@
     {
       "id": "2026-10-P15",
       "date": "2026-10-21",
-      "time_utc": "13:00",
+      "time_utc": "12:00",
       "type": "reel",
       "pillar": "humor",
       "topic": "Someone Slept On A JetBlue Plane — Relatable Reel",
@@ -349,7 +349,7 @@
     {
       "id": "2026-10-P16",
       "date": "2026-10-22",
-      "time_utc": "22:00",
+      "time_utc": "12:00",
       "type": "image",
       "pillar": "opinion",
       "topic": "A380 vs 747 — Greatest Widebody Ever Built?",
@@ -372,7 +372,7 @@
     {
       "id": "2026-10-P17",
       "date": "2026-10-24",
-      "time_utc": "13:00",
+      "time_utc": "12:00",
       "type": "reel",
       "pillar": "drama",
       "topic": "Spotter Saturday — Lufthansa 747-8 Centenary Livery at EWR",
@@ -395,7 +395,7 @@
     {
       "id": "2026-10-P18",
       "date": "2026-10-26",
-      "time_utc": "22:00",
+      "time_utc": "12:00",
       "type": "reel",
       "pillar": "spotting",
       "topic": "Mystery Monday — Beechcraft Staggerwing Biplane",
@@ -418,7 +418,7 @@
     {
       "id": "2026-10-P19",
       "date": "2026-10-27",
-      "time_utc": "13:00",
+      "time_utc": "12:00",
       "type": "image",
       "pillar": "game",
       "topic": "Winglet Guess the Airline — Livery Challenge",
@@ -441,7 +441,7 @@
     {
       "id": "2026-10-P20",
       "date": "2026-10-28",
-      "time_utc": "22:00",
+      "time_utc": "12:00",
       "type": "reel",
       "pillar": "spotting",
       "topic": "Emirates A380 — World's Largest A380 Fleet Takeoff Reel",
