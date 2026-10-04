@@ -288,7 +288,11 @@ def cmd_run_sheet(env, dry_run: bool, only_post: str | None = None,
     for r in rows:
         try:
             when = dt.datetime.fromisoformat(f"{r['date']}T{r['time_utc']}:00+00:00")
-        except Exception:
+        except Exception as e:
+            # Antes este `continue` era mudo: una fecha ilegible borraba el post
+            # del publicador sin dejar rastro (así se perdió octubre completo).
+            print(f"   ⚠️  {r.get('id','?')}: fecha/hora ilegible "
+                  f"({r.get('date')!r} {r.get('time_utc')!r}) → {e}. Fila saltada.")
             continue
         if when <= now:
             due.append(r)

@@ -250,6 +250,39 @@ def _is_true(v) -> bool:
     return v in (True, "TRUE", "true", 1, "1")
 
 
+def _normalize_date(value) -> str:
+    """Devuelve la fecha como 'YYYY-MM-DD'.
+
+    Google Sheets convierte las fechas a NÚMERO DE SERIE (días desde 1899-12-30)
+    cuando se escriben con USER_ENTERED. Al leerlas volvían como '46296' y
+    `fromisoformat` reventaba en publish.py dentro de un `except: continue`,
+    así que octubre entero desaparecía del publicador SIN avisar. Esto lo traduce.
+    """
+    import datetime as _dt
+    v = str(value).strip()
+    if not v:
+        return ""
+    if v.isdigit() and len(v) == 5:                     # serial de Sheets
+        return (_dt.date(1899, 12, 30) + _dt.timedelta(days=int(v))).isoformat()
+    return v
+
+
+def _normalize_time(value) -> str:
+    """Devuelve la hora como 'HH:MM'. Sheets guarda las horas como FRACCIÓN DE DÍA
+    (0.5416666667 = 13:00), y así tampoco las parseaba fromisoformat."""
+    v = str(value).strip()
+    if not v:
+        return ""
+    try:
+        f = float(v)
+    except ValueError:
+        return v
+    if 0 <= f < 1:
+        total = round(f * 24 * 60)
+        return f"{total // 60:02d}:{total % 60:02d}"
+    return v
+
+
 def read_approved_posts(sheet_id: str | None = None) -> list[dict]:
     """Filas con approved=TRUE y published=FALSE. Devuelve dicts con la fila +
     su número de fila en la hoja (_row) para poder marcar published después."""
@@ -258,6 +291,8 @@ def read_approved_posts(sheet_id: str | None = None) -> list[dict]:
     out = []
     for i, r in enumerate(records, start=2):  # fila 1 = encabezado
         if _is_true(r.get("approved")) and not _is_true(r.get("published")):
+            r["date"] = _normalize_date(r.get("date"))
+            r["time_utc"] = _normalize_time(r.get("time_utc"))
             r["_row"] = i
             out.append(r)
     return out
