@@ -114,7 +114,37 @@ AIRCRAFT_WIKI = {
 }
 
 
-def derive_wiki(post: dict) -> str | None:
+# El post P19 era sobre FLEXIÓN DE ALA y la búsqueda se hizo por "Boeing 777",
+# que trae un lateral genérico del avión — el fenómeno no sale en la foto. Cuando
+# el post trata de un FENÓMENO, el fenómeno manda sobre el modelo de avión.
+FENOMENO_WIKI = {
+    # Cada consulta fue PROBADA contra Commons; las que devolvían basura
+    # (cabina de 1928, un Eurofighter para "tren de aterrizaje") se sacaron a
+    # propósito: es mejor caer al avión genérico que ilustrar con algo ajeno.
+    "wing flex": "wing bending flight",
+    "wing bend": "wing bending flight",
+    "winglet": "winglet wingtip",
+    "sharklet": "winglet wingtip",
+    "contrail": "contrail sky",
+    "vortex": "wingtip vortex",
+    "de-ic": "aircraft deicing",
+    "deic": "aircraft deicing",
+    "hangar": "aircraft hangar maintenance",
+    "turbofan": "turbofan engine fan blades",
+    "fan blade": "turbofan engine fan blades",
+}
+
+
+def derive_fenomeno(post: dict) -> str | None:
+    """Si el post trata de un fenómeno (no de un avión), devuelve esa búsqueda."""
+    text = (post.get("topic", "") + " " + post.get("visual_prompt", "")).lower()
+    for k in sorted(FENOMENO_WIKI, key=len, reverse=True):
+        if k in text:
+            return FENOMENO_WIKI[k]
+    return None
+
+
+def derive_aircraft_wiki(post: dict) -> str | None:
     """Si el post trata de un avión específico, devuelve la búsqueda de Commons; si no, None."""
     text = (post.get("topic", "") + " " + post.get("visual_prompt", "")).lower()
     # De la clave MÁS específica a la más genérica: "gimli" (Air Canada 767) debe
@@ -123,6 +153,17 @@ def derive_wiki(post: dict) -> str | None:
         if k in text:
             return AIRCRAFT_WIKI[k]
     return None
+
+
+# Commons rankea por relevancia de texto, no por tono: buscando "Boeing 777
+# airline" devolvió "Japan_Airlines_777_Engine_Failure_on_Departure" y ESA foto
+# se publicó bajo un texto que decía que volar es seguro (2026-09-28, P19).
+# Nunca una foto de incidente: ni para ilustrar, ni por accidente.
+FOTO_PROHIBIDA = re.compile(
+    r"fire|crash|accident|incident|failure|burn|smoke|wreck|emergency|explos|"
+    r"collision|damag|destroy|disaster|hijack|shot[_ ]down|shootdown|debris|"
+    r"memorial|funeral|victim|fatal|mayday|evacuat|skidded|overrun",
+    re.I)
 
 
 def commons_photo(query: str, width: int = 1600) -> dict | None:
@@ -139,6 +180,8 @@ def commons_photo(query: str, width: int = 1600) -> dict | None:
     pages = (data.get("query", {}).get("pages", {}) or {}).values()
     for p in sorted(pages, key=lambda x: x.get("index", 999)):
         ii = (p.get("imageinfo") or [{}])[0]
+        if FOTO_PROHIBIDA.search(p.get("title", "")):
+            continue                               # incidente/accidente: descartar
         if ii.get("mime") == "image/jpeg" and ii.get("thumburl"):
             asset = ii["thumburl"].split("?")[0]   # thumb nítido; sin el ?utm_source
             return {"url": asset, "thumb": asset}
@@ -256,14 +299,16 @@ def search_video(query: str, key: str) -> dict | None:
 
 def media_for_post(post: dict, key: str, query: str) -> dict | None:
     # 1) ¿Avión específico? -> foto curada de Commons (garantiza que corresponde).
-    wq = derive_wiki(post)
-    if wq:
+    # Orden: fenómeno -> avión específico -> Pexels. Si el fenómeno no devuelve
+    # foto, NO se queda sin imagen: cae al modelo de avión como antes.
+    candidatas = [q for q in (derive_fenomeno(post), derive_aircraft_wiki(post)) if q]
+    for wq in candidatas:
         ph = commons_photo(wq)
         if ph:
             a = crop_45(ph["url"])
             return {"asset_path": a, "preview_url": a,
                     "note": f"foto curada Wikimedia 4:5 · {wq}", "force_type": "image"}
-        # si Commons no responde, cae a Pexels (mejor algo que nada).
+    # si ninguna candidata dio foto, cae a Pexels (mejor algo que nada).
     t = post.get("type")
     if t == "reel":
         vid = search_video(query, key)
