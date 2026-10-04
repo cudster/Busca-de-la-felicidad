@@ -41,11 +41,41 @@ DM_TEMPLATE = (
 )
 
 
-def dm_template(creator: str, about: str = "") -> str:
+DM_TEMPLATE_EN = (
+    "Hey {creator} 👋 this is the team behind @epic.plane. We absolutely LOVED your shot"
+    "{about} — it's exactly the kind of thing our aviation community goes crazy for. "
+    "Would you give us permission to share it on our feed with full credit to you "
+    "({creator} tagged in the video and in the caption)? Of course we'll take it down "
+    "right away if you'd rather we didn't. Amazing work! ✈️"
+)
+
+
+# Reddit NO es Instagram: ahí un mensaje con tono publicitario, emojis y
+# mayúsculas entusiastas se ignora o se reporta como spam. Va corto, directo,
+# sin vender nada, diciendo exactamente qué se va a hacer con la foto. Además se
+# pide el handle de Instagram, porque el crédito hay que darlo allá.
+DM_TEMPLATE_REDDIT = (
+    "Hi {creator} — I saw your post \"{about}\" on r/{sub} and it's a great shot.\n\n"
+    "I run an aviation page on Instagram (@epic.plane). Would you be OK with me "
+    "sharing it there? You'd get credit in the image and in the caption, with a link "
+    "to wherever you want people to go.\n\n"
+    "If you're up for it, just tell me the handle or name you want credited. "
+    "And if you'd rather I didn't, no problem at all — I won't post it.\n\n"
+    "Thanks either way."
+)
+
+
+def dm_reddit(creator: str, about: str, sub: str = "planespotting") -> str:
+    return DM_TEMPLATE_REDDIT.format(creator=creator.lstrip("/").replace("u/", "u/"),
+                                     about=about, sub=sub)
+
+
+def dm_template(creator: str, about: str = "", lang: str = "en") -> str:
     handle = creator.lstrip("@")
+    tag = creator if creator.startswith("@") else "@" + handle
     about = f" \"{about}\"" if about else ""
-    return DM_TEMPLATE.format(creator=creator if creator.startswith("@") else "@"+handle,
-                              handle=handle, about=about)
+    tpl = DM_TEMPLATE_EN if lang == "en" else DM_TEMPLATE
+    return tpl.format(creator=tag, handle=handle, about=about)
 
 
 def _next_repost_id(posts: list[dict], month_label: str) -> str:
@@ -130,6 +160,7 @@ def main() -> None:
     ap = argparse.ArgumentParser(description="Motor de repost con crédito (permiso-primero).")
     ap.add_argument("--dm", metavar="@creator", help="Imprime el DM para pedir permiso al autor.")
     ap.add_argument("--about", default="", help="(con --dm) descripción corta de la toma, para personalizar.")
+    ap.add_argument("--lang", default="en", choices=["en", "es"], help="(con --dm) idioma del DM. Epic.Plane=en.")
 
     ap.add_argument("--add", action="store_true", help="Agenda un repost YA autorizado en el calendario.")
     ap.add_argument("--date", help="Fecha del repost YYYY-MM-DD.")
@@ -147,7 +178,7 @@ def main() -> None:
     args = ap.parse_args()
 
     if args.dm:
-        print(dm_template(args.dm, args.about))
+        print(dm_template(args.dm, args.about, args.lang))
         return
     if args.add:
         for req in ("date", "creator", "media_url"):

@@ -111,6 +111,10 @@ AIRCRAFT_WIKI = {
     "gimli": "Air Canada Boeing 767", "pan am": "Pan Am Boeing 747",
     "typhoon": "Eurofighter Typhoon", "eurofighter": "Eurofighter Typhoon",
     "ge90": "General Electric GE90 engine", "dc-3": "Douglas DC-3",
+    "staggerwing": "Beechcraft Staggerwing", "beechcraft": "Beechcraft Staggerwing",
+    "mriya": "Antonov An-225", "737": "Boeing 737 airline", "md-11": "McDonnell Douglas MD-11",
+    "a320": "Airbus A320 airline", "a321": "Airbus A321 airline",
+    "embraer": "Embraer E-Jet airline", "atr 72": "ATR 72 airline",
 }
 
 
@@ -130,13 +134,60 @@ FENOMENO_WIKI = {
     "de-ic": "aircraft deicing",
     "deic": "aircraft deicing",
     "hangar": "aircraft hangar maintenance",
+    # Claves LARGAS a propósito: "cabin" suelto aparece en medio prompt de aviación.
+    "business class": "business class cabin aircraft",
+    "lie-flat": "business class cabin aircraft",
+    "premium cabin": "business class cabin aircraft",
     "turbofan": "turbofan engine fan blades",
     "fan blade": "turbofan engine fan blades",
 }
 
 
+# Si el post nombra una AEROLÍNEA, esa cabina/avión manda sobre cualquier otra
+# coincidencia. Antes el desempate era por largo de clave, y "lie-flat" (8) le
+# ganaba a "jetblue" (7): un post de JetBlue salía con una cabina demo de Airbus
+# con "A220/AIRSPACE" escrito en los asientos. El largo no es una jerarquía.
+AEROLINEA_WIKI = {
+    "jetblue": "JetBlue Airways aircraft interior",
+    "emirates": "Emirates Airbus A380",
+    "air canada": "Air Canada Boeing 767",
+    "lufthansa": "Lufthansa Boeing 747",
+    "british airways": "British Airways Boeing 747",
+    "pan am": "Pan Am Boeing 747",
+    "singapore airlines": "Singapore Airlines Boeing 777",
+    "qantas": "Qantas Airbus A380",
+    "united": "United Airlines Boeing 777",
+    "delta": "Delta Air Lines Airbus A350",
+}
+
+
+# La aerolínea SOLO manda en posts de INTERIOR. Si no, "British Airways livery"
+# (que aparece en el prompt de la Concorde) mandaba a buscar un 747 de BA para
+# un post sobre la Concorde. Nombrar una librea no convierte al post en uno
+# sobre esa aerolínea; el modelo de avión sigue siendo más específico.
+ES_INTERIOR = re.compile(r"cabin|interior|seat|lie-flat|class|aisle|legroom|galley|lavator", re.I)
+
+
+def derive_aerolinea(post: dict) -> str | None:
+    """Aerolínea nombrada, pero sólo si el post es de interior/cabina."""
+    text = (post.get("topic", "") + " " + post.get("visual_prompt", "")).lower()
+    if not ES_INTERIOR.search(text):
+        return None
+    for k in sorted(AEROLINEA_WIKI, key=len, reverse=True):
+        if k in text:
+            return AEROLINEA_WIKI[k]
+    return None
+
+
 def derive_fenomeno(post: dict) -> str | None:
     """Si el post trata de un fenómeno (no de un avión), devuelve esa búsqueda."""
+    aero = derive_aerolinea(post)
+    if aero:
+        return aero
+    # Si el TITULO ya nombra un avión concreto, ese manda: el post es sobre ESE avión.
+    topic = (post.get("topic", "") or "").lower()
+    if any(k in topic for k in _claves_por_especificidad(AIRCRAFT_WIKI)):
+        return None
     text = (post.get("topic", "") + " " + post.get("visual_prompt", "")).lower()
     for k in sorted(FENOMENO_WIKI, key=len, reverse=True):
         if k in text:
@@ -144,14 +195,38 @@ def derive_fenomeno(post: dict) -> str | None:
     return None
 
 
+# Apodos inequívocos: identifican un avión CONCRETO mejor que su número de
+# modelo. "gimli" es el 767 de Air Canada, no un 767 cualquiera; si gana "767"
+# el post del Gimli Glider vuelve a salir con el avión de otra aerolínea.
+APODOS = ("gimli", "mriya", "staggerwing", "blackbird", "pan am", "globemaster",
+          "dreamliner", "jumbo", "raptor")
+
+
+def _claves_por_especificidad(d: dict) -> list:
+    """Primero las claves con número de modelo, después las de marca.
+
+    El largo de la clave NO es jerarquía: "antonov" (7) le ganaba a "an-225" (6)
+    y el post del An-225 —el avión de seis motores, único en el mundo— salía con
+    un An-124, que es otro avión. Un número de modelo siempre es más específico
+    que un nombre de fabricante.
+    """
+    apodos  = [k for k in d if k in APODOS]
+    con_num = [k for k in d if k not in APODOS and any(c.isdigit() for c in k)]
+    sin_num = [k for k in d if k not in APODOS and not any(c.isdigit() for c in k)]
+    return (sorted(apodos, key=len, reverse=True) + sorted(con_num, key=len, reverse=True)
+            + sorted(sin_num, key=len, reverse=True))
+
+
 def derive_aircraft_wiki(post: dict) -> str | None:
     """Si el post trata de un avión específico, devuelve la búsqueda de Commons; si no, None."""
-    text = (post.get("topic", "") + " " + post.get("visual_prompt", "")).lower()
-    # De la clave MÁS específica a la más genérica: "gimli" (Air Canada 767) debe
-    # ganarle a "767", si no el post del Gimli Glider salía con un United.
-    for k in sorted(AIRCRAFT_WIKI, key=len, reverse=True):
-        if k in text:
-            return AIRCRAFT_WIKI[k]
+    # El TOPIC es el tema del post; el visual_prompt es decoración. Se mira el
+    # topic primero para que "MD-11 — Underrated Trijet" no termine ilustrado con
+    # un winglet sólo porque el prompt menciona winglets de pasada.
+    for campo in ("topic", "visual_prompt"):
+        text = (post.get(campo, "") or "").lower()
+        for k in _claves_por_especificidad(AIRCRAFT_WIKI):
+            if k in text:
+                return AIRCRAFT_WIKI[k]
     return None
 
 
