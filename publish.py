@@ -257,6 +257,29 @@ def cmd_run(env, month: str, dry_run: bool) -> None:
         print("→ Calendario actualizado (published:true en los que salieron).")
 
 
+def asset_vivo(url: str, timeout: int = 25) -> bool:
+    """¿El media existe de verdad? No basta con que la URL empiece con http.
+
+    Los mp4 del CDN de Higgsfield expiraron y empezaron a dar 403: el publicador
+    los daba por buenos, Instagram no podía bajarlos y el post se perdía. Peor:
+    como la fila contaba como "publicable", tampoco entraba el plan B.
+    """
+    import urllib.error
+    import urllib.request
+    try:
+        ua = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+              "(KHTML, like Gecko) Chrome/131.0 Safari/537.36")
+        req = urllib.request.Request(url, method="HEAD", headers={"User-Agent": ua})
+        return 200 <= urllib.request.urlopen(req, timeout=timeout).status < 400
+    except urllib.error.HTTPError:
+        return False
+    except Exception as e:
+        # Ante la duda (red caída, HEAD no soportado) se intenta igual, pero
+        # se DICE. Un except mudo aquí volvería a esconder el problema.
+        print(f"   (no pude verificar el media: {type(e).__name__}; lo intento igual)")
+        return True
+
+
 def build_caption_row(r: dict, language: str = "en") -> str:
     """Caption a partir de una fila de la Google Sheet (hashtags ya es string).
     language='es' publica caption_es (marcas hispanas); 'en' publica caption_en.
@@ -294,11 +317,24 @@ def cmd_run_sheet(env, dry_run: bool, only_post: str | None = None,
             print(f"   ⚠️  {r.get('id','?')}: fecha/hora ilegible "
                   f"({r.get('date')!r} {r.get('time_utc')!r}) → {e}. Fila saltada.")
             continue
-        if when <= now:
-            due.append(r)
+        if when > now:
+            continue
+        asset = str(r.get("asset_path", "")).strip()
+        if asset.startswith("http") and not asset_vivo(asset.split(",")[0]):
+            print(f"   ⚠️  {r.get('id','?')}: el media ya no existe (404/403). "
+                  f"Fila saltada; entra el respaldo si no queda nada más.")
+            continue
+        due.append(r)
 
     if not due:
+        # PLAN B: antes esto simplemente volvía y la cuenta quedaba muda ese día.
+        # Si no hay nada aprobado y vencido, sale un post atemporal de respaldo.
         print("No hay filas aprobadas, no publicadas y ya vencidas en la hoja.")
+        try:
+            import evergreen
+            evergreen.publicar("epic-plane", ig_id, token, dry_run=dry_run)
+        except Exception as e:                      # el respaldo nunca debe romper la corrida
+            print(f"   ⚠️  no pude preparar el respaldo: {e}")
         return
 
     print(f"→ {len(due)} post(s) por publicar desde la hoja" + (" (DRY RUN)" if dry_run else "") + ":")

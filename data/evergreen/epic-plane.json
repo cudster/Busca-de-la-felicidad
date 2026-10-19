@@ -1,0 +1,75 @@
+{
+  "note": "RESPALDO (plan B). Posts atemporales que salen SOLO si ese día no hay nada aprobado y vencido en la hoja, para que la cuenta nunca quede muda. Reglas: (1) sólo aviones COMUNES y bien documentados —nada raro o único, que es donde la IA y las búsquedas fallan—; (2) sólo FOTO de Wikimedia Commons, buscada al momento de publicar, por eso nunca expira (las URLs del CDN de Higgsfield sí expiraron y dejaron la cuenta muda en octubre); (3) datos verificables, sin tragedias ni accidentes; (4) un solo CTA, rotando guardar/compartir/comentar; (5) 5 hashtags.",
+  "posts": [
+    {
+      "id": "EV01",
+      "topic": "Boeing 747 — the hump",
+      "wiki": "Boeing 747 airline",
+      "caption_en": "The 747's hump exists because Boeing thought it would end up as a freighter. The cockpit went upstairs so the whole nose could swing open for cargo. The passenger version was supposed to be the short-lived one. Save this for the next time someone asks why the Queen has a bump 📌",
+      "hashtags": "#aviation #avgeek #boeing747 #planespotting #aviationhistory"
+    },
+    {
+      "id": "EV02",
+      "topic": "A380 — four engines, two decks",
+      "wiki": "Airbus A380",
+      "caption_en": "853 passengers is the A380's certified maximum. Airlines never came close — most fly around 500 because they'd rather sell space than seats. The biggest airliner ever built, flying half empty on purpose. Send this to someone who still wants to fly one before they're gone ✈️",
+      "hashtags": "#aviation #avgeek #a380 #airbus #planespotting"
+    },
+    {
+      "id": "EV03",
+      "topic": "Concorde — the stretch at Mach 2",
+      "wiki": "Concorde airliner",
+      "caption_en": "At Mach 2 the friction heated Concorde's airframe until it physically grew about 20 cm longer in flight. On the last flight the crew wedged a cap into the gap behind the flight engineer's panel. It's still stuck there. Save this one 📌",
+      "hashtags": "#aviation #avgeek #concorde #supersonic #aviationhistory"
+    },
+    {
+      "id": "EV04",
+      "topic": "Boeing 737 — the best seller",
+      "wiki": "Boeing 737 airline",
+      "caption_en": "There is a 737 taking off or landing somewhere on Earth every few seconds. It's the most produced airliner in history, and the reason it sits so low is that 1960s airports had no jet bridges — crews loaded bags by hand. Which one do you prefer, 737 or A320? 👇",
+      "hashtags": "#aviation #avgeek #boeing737 #planespotting #aviationdaily"
+    },
+    {
+      "id": "EV05",
+      "topic": "Wing flex — designed to bend",
+      "wiki": "wing bending flight",
+      "caption_en": "A wing that didn't bend would snap. Engineers build the flex in on purpose — in testing, wings are bent far past anything a real flight would ever produce, until they break. The bouncing you see from the window is the wing doing its job. Save this for the nervous flyer in your life 📌",
+      "hashtags": "#aviation #avgeek #aerodynamics #wingflex #planespotting"
+    },
+    {
+      "id": "EV06",
+      "topic": "SR-71 Blackbird — leaking on purpose",
+      "wiki": "Lockheed SR-71 Blackbird",
+      "caption_en": "The SR-71 leaked fuel on the ramp, and that was by design. Its panels were built loose because at Mach 3 the heat expanded the airframe until everything sealed up. It took off nearly dry and refuelled in the air. Tag the person who'd call that a bug ✈️",
+      "hashtags": "#aviation #avgeek #sr71 #blackbird #aviationhistory"
+    },
+    {
+      "id": "EV07",
+      "topic": "Contrails — not smoke",
+      "wiki": "contrail sky",
+      "caption_en": "A contrail isn't exhaust smoke. It's water vapour from burning fuel freezing instantly in air around −40°. Same thing as your breath on a cold morning, except at 11 km. Whether it lingers or vanishes tells you the humidity up there. Save it — you'll read the sky differently tomorrow 📌",
+      "hashtags": "#aviation #avgeek #contrails #skywatching #planespotting"
+    },
+    {
+      "id": "EV08",
+      "topic": "Winglets — bent for a reason",
+      "wiki": "winglet wingtip",
+      "caption_en": "Those upturned wingtips aren't styling. Air spilling around the end of a wing creates a vortex that drags the aircraft back — winglets break it up and cut fuel burn by a few percent. Across a long-haul fleet, a few percent is millions. Which winglet shape is your favourite? 👇",
+      "hashtags": "#aviation #avgeek #winglets #aerodynamics #planespotting"
+    },
+    {
+      "id": "EV09",
+      "topic": "The GE90 — wider than a fuselage",
+      "wiki": "General Electric GE90 engine",
+      "caption_en": "The GE90's fan is wider than the entire cabin of a 737. One engine. Its blades are curved carbon fibre, and each one costs about as much as a car. Send this to someone who thinks a jet engine is just a big fan ✈️",
+      "hashtags": "#aviation #avgeek #ge90 #jetengine #boeing777"
+    },
+    {
+      "id": "EV10",
+      "topic": "Ground effect — the cushion",
+      "wiki": "Boeing 737 airline",
+      "caption_en": "In the last seconds before touchdown the aircraft floats. Within about one wingspan of the runway the air trapped underneath builds a cushion and lift jumps — that's ground effect, and it's why a smooth landing feels like the plane refuses to settle. Save this for your next window seat 📌",
+      "hashtags": "#aviation #avgeek #aerodynamics #landing #pilotlife"
+    }
+  ]
+}

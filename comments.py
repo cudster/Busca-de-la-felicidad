@@ -204,12 +204,13 @@ def run(env, niche: str, days: int, media_limit: int, do_post: bool) -> None:
                 continue
             if (c.get("username") or "").lower() in ("epic.plane", niche):
                 continue  # no responder a nosotros mismos
-            action, reason = classify(c.get("text", ""))
+            texto = c.get("text") or ""      # la clave puede venir con None, no ausente
+            action, reason = classify(texto)
             if action == "auto":
                 msg = pick_reply(niche, seed); seed += 1
-                auto.append({"cid": cid, "user": c.get("username"), "text": c.get("text"), "reply": msg})
+                auto.append({"cid": cid, "user": c.get("username"), "text": texto, "reply": msg})
             else:
-                escalate.append({"cid": cid, "user": c.get("username"), "text": c.get("text"), "reason": reason})
+                escalate.append({"cid": cid, "user": c.get("username"), "text": texto, "reason": reason})
 
     print(f"\n=== COMENTARIOS ({niche}) — {len(auto)} auto · {len(escalate)} a escalar ===")
     print("\n🟢 AUTO (positivos simples):")
