@@ -57,11 +57,38 @@ def _marcar(niche: str, pid: str) -> None:
         json.dumps(usos, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-def elegir(niche: str) -> dict | None:
-    """El respaldo menos usado recientemente. None si no hay pool."""
+def publicados_recientes(ig_id: str, token: str, n: int = 25) -> list[str]:
+    """Captions ya publicados en Instagram. ESTA es la fuente de verdad.
+
+    El registro en disco no sirve: el workflow corre en un runner limpio de
+    GitHub Actions, escribe `used-<nicho>.json` ahí y el runner se destruye. Como
+    el archivo nunca volvía al repo, cada día el sistema creía no haber usado
+    ninguno y elegía SIEMPRE el primero: el post del 747 salió 5 veces en
+    octubre. Preguntarle a Instagram qué se publicó no se puede desincronizar.
+    """
+    import urllib.request
+    url = (f"https://graph.facebook.com/v21.0/{ig_id}/media"
+           f"?fields=caption&limit={n}&access_token={token}")
+    try:
+        datos = json.load(urllib.request.urlopen(url, timeout=40)).get("data", [])
+    except Exception as e:
+        print(f"   (no pude leer lo ya publicado: {type(e).__name__}; sigo con el registro local)")
+        return []
+    return [(m.get("caption") or "")[:80] for m in datos]
+
+
+def elegir(niche: str, ya_publicados: list[str] | None = None) -> dict | None:
+    """El respaldo menos usado recientemente, descartando los ya publicados."""
     pool = _pool(niche)
     if not pool:
         return None
+    if ya_publicados:
+        frescos = [p for p in pool
+                   if not any(p["caption_en"][:80] == c for c in ya_publicados)]
+        if frescos:
+            pool = frescos
+        else:
+            print("   ⚠️  todos los respaldos ya salieron hace poco; toca ampliar el pool.")
     usos = _usos(niche)
     hoy = dt.date.today()
 
@@ -83,9 +110,9 @@ def elegir(niche: str) -> dict | None:
     return max(candidatos, key=antiguedad)
 
 
-def preparar(niche: str) -> dict | None:
+def preparar(niche: str, ya_publicados: list[str] | None = None) -> dict | None:
     """Devuelve el respaldo con una URL de foto FRESCA de Commons, o None."""
-    post = elegir(niche)
+    post = elegir(niche, ya_publicados)
     if not post:
         return None
     import media
@@ -98,7 +125,7 @@ def preparar(niche: str) -> dict | None:
 
 def publicar(niche: str, ig_id: str, token: str, dry_run: bool = True) -> bool:
     """Publica un respaldo. Devuelve True si salió de verdad."""
-    post = preparar(niche)
+    post = preparar(niche, publicados_recientes(ig_id, token))
     if not post:
         return False
     caption = f"{post['caption_en']}\n\n{post['hashtags']}"
