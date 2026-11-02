@@ -399,9 +399,11 @@ def build_user_prompt(skeleton: list[dict], month_label: str, cfg: dict | None =
                      "`caption_en` = a short faithful English mirror. `hook_en` may be in Spanish.")
     try:
         import hooks as _hooks
-        _brief = _hooks.brief_para_prompt()
+        # OJO: NO llamar a esto `_brief` — ese nombre ya lo usa el brief de
+        # tendencias más abajo y lo sobrescribe en silencio.
+        _hooks_brief = _hooks.brief_para_prompt()
     except Exception:
-        _brief = ""
+        _hooks_brief = ""
     lines = [
         f"Generate the creative content for {brand}'s {month_label} calendar "
         f"({len(skeleton)} posts). Here is the fixed schedule — fill in the "
@@ -477,6 +479,34 @@ def build_user_prompt(skeleton: list[dict], month_label: str, cfg: dict | None =
         lines.append(
             f"- id={p['id']} | date={p['date']} | type={p['type']} | "
             f"pillar={p['pillar']}{cta_note}\n    {brief}{ground}"
+        )
+    if _hooks_brief:
+        # El motor tenía UN molde de gancho: "Can you name this jet?" salió 4
+        # veces en octubre y 19 de 20 ganchos reprobaron hookscore. Las fórmulas
+        # con nombre + la prohibición explícita del molde viejo es lo que rompe
+        # esa inercia; sin la prohibición el modelo vuelve a él solo.
+        lines.append("\n" + _hooks_brief)
+        lines.append(
+            "\nHOOK VARIETY IS MANDATORY — this is a hard requirement, not a preference:\n"
+            "- Use at least 8 DIFFERENT formulas across the month.\n"
+            "- NEVER use the same formula id more than twice.\n"
+            "- BANNED: 'Can you name this...', 'Guess the...', 'Name this...'. That "
+            "pattern was used in half of last month's posts and every single one "
+            "scored below the passing mark. Do not use any variation of it.\n"
+            "- A hook must contain something concrete: a number, a name, a date, a "
+            "price, or a claim someone could disagree with. 'Can you name this jet' "
+            "contains nothing.\n"
+            "- Put `hook_id` on every post so performance can be traced back to the formula.\n"
+            "\nTHREE MECHANICAL RULES FOR hook_en (measured, not opinion):\n"
+            "1. NO EMOJI in hook_en. At hook size there is room for words or an emoji, "
+            "not both. Emojis stay in caption_en/caption_es.\n"
+            "2. SPEAK TO THE VIEWER. Use 'you' or 'your' in the hook. Scoring every hook "
+            "of the last two months showed the same failure: third person, nobody in the "
+            "room. 'Six engines, 640 tonnes' states a fact; 'You will never see this one "
+            "fly again' puts someone in the room.\n"
+            "3. PUT SOMETHING AT STAKE: a risk, a loss, a mistake, a disagreement or a "
+            "deadline. A line with nothing at stake scores near zero no matter how "
+            "accurate it is."
         )
     lines.append(
         "\nReturn every id via the submit_calendar tool. Keep topics unique "
@@ -675,6 +705,9 @@ def merge(skeleton: list[dict], creative: dict[str, dict]) -> list[dict]:
                 "pillar": p["pillar"],
                 "topic": c.get("topic", ""),
                 "hook_en": c.get("hook_en", ""),
+                # Qué fórmula se usó. Sin esto `ig-audit` no puede cruzar
+                # fórmula con resultado, que es todo el punto de medirlas.
+                "hook_id": c.get("hook_id"),
                 "caption_en": c.get("caption_en", ""),
                 "caption_es": c.get("caption_es", ""),
                 "hashtags": c.get("hashtags", []),
