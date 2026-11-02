@@ -397,6 +397,11 @@ def build_user_prompt(skeleton: list[dict], month_label: str, cfg: dict | None =
         lang_note = ("\nIMPORTANT — this brand publishes in SPANISH: `caption_es` is the REAL "
                      "published caption (write it beautifully in Chilean Spanish, tuteo). "
                      "`caption_en` = a short faithful English mirror. `hook_en` may be in Spanish.")
+    try:
+        import hooks as _hooks
+        _brief = _hooks.brief_para_prompt()
+    except Exception:
+        _brief = ""
     lines = [
         f"Generate the creative content for {brand}'s {month_label} calendar "
         f"({len(skeleton)} posts). Here is the fixed schedule — fill in the "
@@ -494,7 +499,8 @@ CALENDAR_TOOL = {
                     "properties": {
                         "id": {"type": "string", "description": "The post id, exactly as given."},
                         "topic": {"type": "string"},
-                        "hook_en": {"type": "string", "description": "Scroll-stopping first line, max ~8 words."},
+                        "hook_en": {"type": "string", "description": "Scroll-stopping first line, max ~8 words. It MUST follow one of the HOOK FORMULAS given in the prompt."},
+                        "hook_id": {"type": "integer", "description": "The id of the HOOK FORMULA used for hook_en. Vary it across the month - do not reuse the same formula more than twice."},
                         "caption_en": {"type": "string", "description": "ULTRA-short (1-2 lines, ~10-25 words), hyped/awe, 1-3 emojis (✈️ signature). Must carry ONE concrete keepable detail (exact model / number / record) so it is worth SAVING, and END with one CTA rotated across posts: SAVE ('save this for...'), SHARE/TAG ('send this to the avgeek who...'), or COMMENT (a guess / this-or-that). Saves and shares drive reach - prioritise them over comments. No paragraphs, no emoji rows."},
                         "caption_es": {"type": "string", "description": "Natural neutral Latin-American Spanish."},
                         "hashtags": {
@@ -508,6 +514,7 @@ CALENDAR_TOOL = {
                         "id",
                         "topic",
                         "hook_en",
+                        "hook_id",
                         "caption_en",
                         "caption_es",
                         "hashtags",

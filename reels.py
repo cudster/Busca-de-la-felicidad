@@ -145,6 +145,52 @@ def esperar(trabajos: list[dict], headers: dict, max_min: int = 15) -> dict:
     return listos
 
 
+REELS_DIR = ROOT / "assets" / "reels"
+
+
+def fijar(post_id: str, url_cdn: str) -> str | None:
+    """Baja el mp4, lo recomprime y devuelve una URL de jsDelivr desde el repo.
+
+    Por qué: las URLs del CDN de Higgsfield EXPIRAN (empezaron a dar 403) y se
+    llevaron 7 reels de octubre por delante. Un asset de publicación no puede
+    vivir en un CDN ajeno y temporal. El repo es público y jsDelivr lo sirve
+    gratis y permanente, que es el patrón que este proyecto ya usa.
+
+    Se recomprime porque jsDelivr corta en 20 MB y git no es lugar para videos
+    gordos; a 720p con CRF 26 la calidad sobra para Instagram, que reencoda igual.
+    """
+    import subprocess
+    REELS_DIR.mkdir(parents=True, exist_ok=True)
+    destino = REELS_DIR / f"{post_id}.mp4"
+    crudo = REELS_DIR / f".{post_id}.raw.mp4"
+    try:
+        urllib.request.urlretrieve(url_cdn, crudo)
+    except Exception as e:
+        print(f"   ⚠️  {post_id}: no pude bajar el mp4 ({type(e).__name__})")
+        return None
+    try:
+        subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(crudo),
+                        "-c:v", "libx264", "-crf", "26", "-preset", "medium",
+                        "-vf", "scale=-2:1280", "-c:a", "aac", "-b:a", "96k",
+                        str(destino)], check=True, timeout=600)
+        crudo.unlink(missing_ok=True)
+    except Exception as e:
+        print(f"   ⚠️  {post_id}: ffmpeg falló ({e}); uso el archivo sin recomprimir")
+        crudo.replace(destino)
+    mb = destino.stat().st_size / 1e6
+    if mb > 19:
+        print(f"   ⚠️  {post_id}: {mb:.1f} MB — jsDelivr corta en 20 MB.")
+    repo = rama = None
+    for l in (ROOT / ".env").read_text(encoding="utf-8").splitlines():
+        if l.startswith("GITHUB_REPO="):   repo = l.split("=", 1)[1].strip()
+        if l.startswith("GITHUB_BRANCH="): rama = l.split("=", 1)[1].strip()
+    if not repo:
+        print(f"   ⚠️  falta GITHUB_REPO en .env; no puedo armar la URL de {post_id}")
+        return None
+    print(f"   ↓ {post_id}  {mb:.1f} MB  → assets/reels/{post_id}.mp4")
+    return f"https://cdn.jsdelivr.net/gh/{repo}@{rama or 'main'}/assets/reels/{post_id}.mp4"
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="Genera los reels con Kling 3.0 desde la foto real.")
     ap.add_argument("--month", required=True, help="Mes del calendario (YYYY-MM).")
@@ -185,6 +231,13 @@ def main() -> None:
 
     if not listos:
         return
+    listos = {pid: fijar(pid, url) for pid, url in listos.items()}
+    listos = {k: v for k, v in listos.items() if v}
+    if not listos:
+        print("No pude dejar ningún mp4 en el repo.")
+        return
+    print("\n   Recuerda: `git add assets/reels && git commit && git push` para que jsDelivr los sirva.")
+
     if not a.to_sheet:
         print("\n(no se escribió en la hoja; agrega --to-sheet cuando los hayas revisado)")
         return

@@ -241,8 +241,15 @@ FOTO_PROHIBIDA = re.compile(
     re.I)
 
 
-def commons_photo(query: str, width: int = 1600) -> dict | None:
-    """Trae una foto JPEG correcta y nítida de Wikimedia Commons (URL pública)."""
+def commons_photo(query: str, width: int = 1600, variante: int = 0) -> dict | None:
+    """Trae una foto JPEG correcta y nítida de Wikimedia Commons (URL pública).
+
+    `variante` elige entre los candidatos válidos en vez de devolver siempre el
+    primero. Sin esto, dos posts del mismo avión recibían la MISMA foto: en
+    sep-oct, 40 posts salieron de sólo 21 búsquedas y "Airbus A380" se repitió 4
+    veces con la imagen idéntica. Se deriva del id del post, así que es estable
+    (el mismo post siempre da la misma foto) y distinto entre posts.
+    """
     url = ("https://commons.wikimedia.org/w/api.php?action=query&generator=search"
            "&gsrsearch=" + urllib.parse.quote(query + " aircraft") +
            "&gsrnamespace=6&gsrlimit=8&prop=imageinfo&iiprop=url|mime"
@@ -253,14 +260,17 @@ def commons_photo(query: str, width: int = 1600) -> dict | None:
     except (urllib.error.HTTPError, urllib.error.URLError):
         return None
     pages = (data.get("query", {}).get("pages", {}) or {}).values()
+    validas = []
     for p in sorted(pages, key=lambda x: x.get("index", 999)):
         ii = (p.get("imageinfo") or [{}])[0]
         if FOTO_PROHIBIDA.search(p.get("title", "")):
             continue                               # incidente/accidente: descartar
         if ii.get("mime") == "image/jpeg" and ii.get("thumburl"):
-            asset = ii["thumburl"].split("?")[0]   # thumb nítido; sin el ?utm_source
-            return {"url": asset, "thumb": asset}
-    return None
+            validas.append(ii["thumburl"].split("?")[0])  # thumb nítido, sin ?utm_source
+    if not validas:
+        return None
+    asset = validas[variante % len(validas)]
+    return {"url": asset, "thumb": asset}
 
 
 def crop_45(url: str) -> str:
@@ -377,8 +387,12 @@ def media_for_post(post: dict, key: str, query: str) -> dict | None:
     # Orden: fenómeno -> avión específico -> Pexels. Si el fenómeno no devuelve
     # foto, NO se queda sin imagen: cae al modelo de avión como antes.
     candidatas = [q for q in (derive_fenomeno(post), derive_aircraft_wiki(post)) if q]
+    # La variante sale del id (ej "2026-10-P03" -> 3): estable y distinta por post.
+    import re as _re
+    _m = _re.search(r"P(\d+)$", str(post.get("id", "")))
+    variante = int(_m.group(1)) if _m else 0
     for wq in candidatas:
-        ph = commons_photo(wq)
+        ph = commons_photo(wq, variante=variante)
         if ph:
             a = crop_45(ph["url"])
             return {"asset_path": a, "preview_url": a,
